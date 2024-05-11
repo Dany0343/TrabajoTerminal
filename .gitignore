@@ -10,6 +10,9 @@ lerna-debug.log*
 # Diagnostic reports
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 
+# perso
+ajolotarios/.next/
+
 # Runtime data
 pids
 *.pid
