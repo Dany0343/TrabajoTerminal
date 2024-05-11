@@ -1,0 +1,117 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("POSTGRES_PRISMA_URL")
+}
+
+model User {
+  id            Int         @id @default(autoincrement())
+  firstName     String
+  lastName      String
+  email         String      @unique
+  password      String
+  role          Role        @default(AJOLATORY_SUBSCRIBER)
+  phone         String
+  ajolotaries   Ajolotary[]
+}
+
+enum Role {
+  SUPER_ADMIN
+  AJOLATORY_ADMIN
+  AJOLATORY_SUBSCRIBER
+}
+
+model Ajolotary {
+  id            Int         @id @default(autoincrement())
+  name          String
+  location      String
+  description   String
+  permitNumber  String
+  users         User[]
+  tanks         Tank[]
+}
+
+model Tank {
+  id            Int         @id @default(autoincrement())
+  name          String
+  capacity      Float
+  observations  String
+  ajolotaryId   Int
+  ajolotary     Ajolotary   @relation(fields: [ajolotaryId], references: [id])
+  devices       Device[]
+  axolotls      Axolotl[]
+}
+
+model Device {
+  id            Int         @id @default(autoincrement())
+  tankId        Int
+  tank          Tank        @relation(fields: [tankId], references: [id])
+  sensors       Sensor[]
+  measurements  Measurement[]
+}
+
+model Sensor {
+  id            Int         @id @default(autoincrement())
+  model         String
+  lastConnection DateTime
+  magnitude     String
+  type          String
+  deviceId      Int
+  device        Device      @relation(fields: [deviceId], references: [id])
+}
+
+model Measurement {
+  id            Int         @id @default(autoincrement())
+  dateTime      DateTime
+  deviceId      Int
+  device        Device      @relation(fields: [deviceId], references: [id])
+  alerts        Alert[]
+  parameters    Parameter[]
+}
+
+model Axolotl {
+  id            Int         @id @default(autoincrement())
+  name          String
+  species       String
+  age           Int
+  health        String
+  size          Float
+  stage         String
+  tankId        Int
+  tank          Tank        @relation(fields: [tankId], references: [id])
+}
+
+model Alert {
+  id            Int         @id @default(autoincrement())
+  measurementId Int
+  alertType     String
+  description   String
+  priority      Priority
+  status        String
+  measurement   Measurement @relation(fields: [measurementId], references: [id])
+}
+
+enum Priority {
+  HIGH
+  MEDIUM
+  LOW
+}
+
+model MeasurementRule {
+  id            Int         @id @default(autoincrement())
+  optimalMin    Float
+  optimalMax    Float
+  action        String
+  parameter     Parameter   @relation(fields: [id], references: [id])
+}
+
+model Parameter {
+  id                Int               @id @default(autoincrement())
+  type              String
+  magnitude         String
+  measurementRules  MeasurementRule[]
+  measurements      Measurement[]
+}
