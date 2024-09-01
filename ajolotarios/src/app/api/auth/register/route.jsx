@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcrypt";
-import db from "@/libs/db";
+import db from "@/lib/db";
 
 export async function POST(req) {
   const { firstName, lastName, email, password, phone = '' } = await req.json();
