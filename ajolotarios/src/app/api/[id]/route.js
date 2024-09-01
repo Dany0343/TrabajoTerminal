@@ -1,6 +1,6 @@
 import db from "@/libs/db";
 
-export default async function handler(req, res) {
+async function getUserById(req, res) {
   const { id } = req.query;
 
   try {
@@ -25,3 +25,5 @@ export default async function handler(req, res) {
     res.status(500).json({ message: 'Error al obtener los datos del usuario' });
   }
 }
+
+export default getUserById;
