@@ -1,10 +1,10 @@
-import prisma from '../../../libs/prisma';
+import db from "@/libs/db";
 
 export default async function handler(req, res) {
   const { id } = req.query;
 
   try {
-    const user = await prisma.user.findUnique({
+    const user = await db.user.findUnique({
       where: { id: parseInt(id) },
       select: {
         username: true,
