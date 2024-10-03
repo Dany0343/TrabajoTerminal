@@ -7,46 +7,6 @@ import { Progress } from "@/components/ui/progress"
 export default function Dashboard() {
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container flex h-14 items-center">
-          <div className="mr-4 hidden md:flex">
-            <a className="mr-6 flex items-center space-x-2" href="/">
-              <img src="/placeholder.svg?height=30&width=30" alt="Logo" className="h-6 w-6" />
-              <span className="hidden font-bold sm:inline-block">Axolotl Management System</span>
-            </a>
-            <nav className="flex items-center space-x-6 text-sm font-medium">
-              <a className="transition-colors hover:text-foreground/80 text-foreground" href="/">Inicio</a>
-              <a className="transition-colors hover:text-foreground/80 text-foreground/60" href="/instalaciones">Instalaciones</a>
-              <a className="transition-colors hover:text-foreground/80 text-foreground/60" href="/tanques">Tanques</a>
-              <a className="transition-colors hover:text-foreground/80 text-foreground/60" href="/axolotlis">Axolotlis</a>
-              <a className="transition-colors hover:text-foreground/80 text-foreground/60" href="/alertas">Alertas</a>
-            </nav>
-          </div>
-          <div className="flex flex-1 items-center justify-between space-x-2 md:justify-end">
-            <div className="w-full flex-1 md:w-auto md:flex-none">
-              <Button variant="outline" className="relative h-8 w-full justify-start text-sm font-normal md:w-40 md:flex">
-                <span className="hidden lg:inline-flex">Buscar...</span>
-                <kbd className="pointer-events-none absolute right-1.5 top-1.5 hidden h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100 sm:flex">
-                  <span className="text-xs">⌘</span>K
-                </kbd>
-              </Button>
-            </div>
-            <Button size="icon" variant="ghost">
-              <Bell className="h-4 w-4" />
-              <span className="sr-only">Notificaciones</span>
-            </Button>
-            <Button size="icon" variant="ghost">
-              <MessageSquare className="h-4 w-4" />
-              <span className="sr-only">Mensajes</span>
-            </Button>
-            <Avatar>
-              <AvatarImage src="/placeholder.svg?height=32&width=32" alt="@usuario" />
-              <AvatarFallback>U</AvatarFallback>
-            </Avatar>
-          </div>
-        </div>
-      </header>
 
       {/* Main Content */}
       <main className="container mx-auto py-6">
