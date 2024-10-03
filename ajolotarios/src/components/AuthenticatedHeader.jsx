@@ -3,9 +3,9 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { Button } from "@/components/ui/Avatar"; 
+import { Button } from "@/components/ui/button"; 
 import { Bell, MessageSquare } from "lucide-react";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/Avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
 const AuthenticatedHeader = () => {
   return (
