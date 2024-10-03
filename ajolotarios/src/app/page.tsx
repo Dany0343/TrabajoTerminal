@@ -58,7 +58,7 @@ export default function Dashboard() {
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Axolotlis Registrados</CardTitle>
+              <CardTitle className="text-sm font-medium">Ajolotes Registrados</CardTitle>
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox="0 0 24 24"
@@ -181,7 +181,7 @@ export default function Dashboard() {
           </Card>
         </div>
 
-        {/* Featured Tanks and Axolotls */}
+        {/* Featured Tanks and Ajolotes */}
         <div className="grid gap-4 md:grid-cols-2 mb-6">
           <Card>
             <CardHeader>
@@ -207,17 +207,17 @@ export default function Dashboard() {
           </Card>
           <Card>
             <CardHeader>
-              <CardTitle>Axolotlis Destacados</CardTitle>
+              <CardTitle>Ajolotes Destacados</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 <div className="flex items-center space-x-4">
                   <Avatar>
-                    <AvatarImage src="/placeholder.svg?height=40&width=40" alt="Axolotl" />
+                    <AvatarImage src="/placeholder.svg?height=40&width=40" alt="Ajolote" />
                     <AvatarFallback>AX</AvatarFallback>
                   </Avatar>
                   <div>
-                    <h3 className="font-medium">Axolotl #123</h3>
+                    <h3 className="font-medium">Ajolote #123</h3>
                     <p className="text-sm text-muted-foreground">Edad: 2 años | Salud: Excelente</p>
                   </div>
                 </div>
@@ -232,7 +232,7 @@ export default function Dashboard() {
         <div className="container mx-auto flex flex-col items-center justify-between gap-4 py-10 md:h-24 md:flex-row md:py-0">
           <div className="flex flex-col items-center gap-4 px-8 md:flex-row md:gap-2 md:px-0">
             <p className="text-center text-sm leading-loose md:text-left">
-              © 2023 Axolotl Management System. Todos los derechos reservados.
+              © 2024 Sistema de Monitoreo de Ajolotes. Todos los derechos reservados.
             </p>
           </div>
           <p className="text-center text-sm md:text-left">

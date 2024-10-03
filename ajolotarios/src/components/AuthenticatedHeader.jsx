@@ -9,8 +9,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
 const AuthenticatedHeader = () => {
   return (
-    <header className="sticky mx-auto top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-14 items-center">
+    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <div className="container mx-auto flex h-14 items-center">
         <div className="mr-4 hidden md:flex">
           <Link href="/" className="mr-6 flex items-center space-x-2">
             <Image
@@ -21,14 +21,14 @@ const AuthenticatedHeader = () => {
               className="h-6 w-6"
             />
             <span className="hidden font-bold sm:inline-block">
-              Axolotl Management System
+              Sistema de Monitoreo de Ajolotes
             </span>
           </Link>
           <nav className="flex items-center space-x-6 text-sm font-medium">
             <Link href="/" className="transition-colors hover:text-foreground/80 text-foreground">Inicio</Link>
             <Link href="/instalaciones" className="transition-colors hover:text-foreground/80 text-foreground/60">Instalaciones</Link>
             <Link href="/tanques" className="transition-colors hover:text-foreground/80 text-foreground/60">Tanques</Link>
-            <Link href="/axolotlis" className="transition-colors hover:text-foreground/80 text-foreground/60">Axolotlis</Link>
+            <Link href="/axolotlis" className="transition-colors hover:text-foreground/80 text-foreground/60">Ajolotes</Link>
             <Link href="/alertas" className="transition-colors hover:text-foreground/80 text-foreground/60">Alertas</Link>
           </nav>
         </div>
@@ -44,10 +44,6 @@ const AuthenticatedHeader = () => {
           <Button size="icon" variant="ghost">
             <Bell className="h-4 w-4" />
             <span className="sr-only">Notificaciones</span>
-          </Button>
-          <Button size="icon" variant="ghost">
-            <MessageSquare className="h-4 w-4" />
-            <span className="sr-only">Mensajes</span>
           </Button>
           <Avatar>
             <AvatarImage src="/placeholder.svg" alt="@usuario" />
