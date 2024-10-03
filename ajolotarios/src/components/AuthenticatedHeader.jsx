@@ -14,11 +14,10 @@ const AuthenticatedHeader = () => {
         <div className="mr-4 hidden md:flex">
           <Link href="/" className="mr-6 flex items-center space-x-2">
             <Image
-              src="/placeholder.svg"
-              width={30}
-              height={30}
-              alt="Logo"
-              className="h-6 w-6"
+            src="/ajolotes.png"
+            width={30}
+            height={30}
+            alt="Double point"
             />
             <span className="hidden font-bold sm:inline-block">
               Sistema de Monitoreo de Ajolotes
