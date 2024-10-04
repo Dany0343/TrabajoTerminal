@@ -22,7 +22,7 @@ const AuthenticatedHeader = () => {
         <div className="mr-4 hidden md:flex">
           <a className="mr-6 flex items-center space-x-2" href="/">
           <Image
-            src="/ajolotes.png"
+            src="/logoAjolotarios.jpeg"
             width={30}
             height={30}
             alt="Double point"
