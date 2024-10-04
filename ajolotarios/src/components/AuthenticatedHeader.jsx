@@ -32,9 +32,15 @@ const AuthenticatedHeader = () => {
           <nav className="flex items-center space-x-6 text-sm font-medium">
             <a className="transition-colors hover:text-foreground/80 text-foreground" href="/">Inicio</a>
             <a className="transition-colors hover:text-foreground/80 text-foreground/60" href="/instalaciones">Instalaciones</a>
-            <a className="transition-colors hover:text-foreground/80 text-foreground/60" href="/tanques">Tanques</a>
-            <a className="transition-colors hover:text-foreground/80 text-foreground/60" href="/ajolotes">Ajolotes</a>
-            <a className="transition-colors hover:text-foreground/80 text-foreground/60" href="/alertas">Alertas</a>
+            <a className="transition-colors hover:text-foreground/80 text-foreground/60" href="/tanques"><Link className="font-semibold" href={"/tanks"}>
+            Tanques
+          </Link></a>
+            <a className="transition-colors hover:text-foreground/80 text-foreground/60" href="/ajolotes"><Link className="font-semibold" href={"/axolots"}>
+            Ajolotes
+          </Link></a>
+            <a className="transition-colors hover:text-foreground/80 text-foreground/60" href="/alertas"><Link className="font-semibold" href={"/alerts"}>
+            Alertas
+          </Link></a>
           </nav>
         </div>
         <div className="flex flex-1 items-center justify-between space-x-2 md:justify-end">
