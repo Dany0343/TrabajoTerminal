@@ -16,6 +16,7 @@ export async function POST(req) {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
+    const updatedAt = new Date();
     const newUser = await db.user.create({
       data: {
         firstName,
@@ -24,7 +25,7 @@ export async function POST(req) {
         password: hashedPassword,
         phone, // Aquí se utilizará el valor por defecto ('') si no se proporciona
         role: "SUPER_ADMIN", // Cambiar a 'USER' si se desea un rol de usuario normal
-        updatedAt: new Date(),
+        updatedAt: updatedAt.toISOString(),
       },
     });
 
