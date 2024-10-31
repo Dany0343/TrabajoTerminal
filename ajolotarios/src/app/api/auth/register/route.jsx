@@ -25,7 +25,6 @@ export async function POST(req) {
         password: hashedPassword,
         phone, // Aquí se utilizará el valor por defecto ('') si no se proporciona
         role: "SUPER_ADMIN", // Cambiar a 'USER' si se desea un rol de usuario normal
-        createdAt: now,
         updatedAt: now 
       },
     });
