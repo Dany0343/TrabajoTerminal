@@ -105,7 +105,8 @@ model MeasurementRule {
   optimalMin    Float
   optimalMax    Float
   action        String
-  parameter     Parameter   @relation(fields: [id], references: [id])
+  parameterId   Int
+  parameter     Parameter   @relation(fields: [parameterId], references: [id])
 }
 
 model Parameter {
