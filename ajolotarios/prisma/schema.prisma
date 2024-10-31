@@ -20,8 +20,6 @@ model User {
   password      String
   role          Role        @default(AJOLATORY_SUBSCRIBER)
   phone         String      @db.VarChar(20)
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
   ajolotaries   Ajolotary[]
   resolvedAlerts Alert[]    @relation("AlertResolver")
   createdBy     Int?
@@ -42,8 +40,6 @@ model Ajolotary {
   location     String
   description  String   @db.Text
   permitNumber String   @db.VarChar(50)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
   active       Boolean  @default(true)
   users        User[]
   tanks        Tank[]
@@ -54,8 +50,6 @@ model Tank {
   name         String    @db.VarChar(50)
   capacity     Decimal   @db.Decimal(10,2)
   observations String    @db.Text
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
   status       TankStatus @default(ACTIVE)
   ajolotaryId  Int
   ajolotary    Ajolotary @relation(fields: [ajolotaryId], references: [id], onDelete: Cascade)
@@ -77,8 +71,6 @@ model Device {
   serialNumber String        @unique @db.VarChar(50)
   status       DeviceStatus  @default(ACTIVE)
   tankId       Int
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
   tank         Tank          @relation(fields: [tankId], references: [id], onDelete: Cascade)
   sensors      Sensor[]
   measurements Measurement[]
@@ -174,8 +166,6 @@ model Axolotl {
   weight      Decimal      @db.Decimal(10,2)
   stage       LifeStage
   tankId      Int
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
   tank        Tank         @relation(fields: [tankId], references: [id], onDelete: Cascade)
   observations String[]
 }
