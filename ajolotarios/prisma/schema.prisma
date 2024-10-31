@@ -11,15 +11,22 @@ datasource db {
   url      = env("POSTGRES_PRISMA_URL")
 }
 
+// Usuarios y roles
 model User {
   id            Int         @id @default(autoincrement())
-  firstName     String
-  lastName      String
-  email         String      @unique
+  firstName     String      @db.VarChar(50)
+  lastName      String      @db.VarChar(50)
+  email         String      @unique @db.VarChar(100)
   password      String
   role          Role        @default(AJOLATORY_SUBSCRIBER)
-  phone         String
+  phone         String      @db.VarChar(20)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
   ajolotaries   Ajolotary[]
+  resolvedAlerts Alert[]    @relation("AlertResolver")
+  createdBy     Int?
+  creator       User?       @relation("UserCreator", fields: [createdBy], references: [id])
+  createdUsers  User[]      @relation("UserCreator")
 }
 
 enum Role {
@@ -28,95 +35,218 @@ enum Role {
   AJOLATORY_SUBSCRIBER
 }
 
+// Gestión de instalaciones
 model Ajolotary {
-  id            Int         @id @default(autoincrement())
-  name          String
-  location      String
-  description   String
-  permitNumber  String
-  users         User[]
-  tanks         Tank[]
+  id           Int      @id @default(autoincrement())
+  name         String   @db.VarChar(100)
+  location     String
+  description  String   @db.Text
+  permitNumber String   @db.VarChar(50)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  active       Boolean  @default(true)
+  users        User[]
+  tanks        Tank[]
 }
 
 model Tank {
-  id            Int         @id @default(autoincrement())
-  name          String
-  capacity      Float
-  observations  String
-  ajolotaryId   Int
-  ajolotary     Ajolotary   @relation(fields: [ajolotaryId], references: [id])
-  devices       Device[]
-  axolotls      Axolotl[]
+  id           Int       @id @default(autoincrement())
+  name         String    @db.VarChar(50)
+  capacity     Decimal   @db.Decimal(10,2)
+  observations String    @db.Text
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  status       TankStatus @default(ACTIVE)
+  ajolotaryId  Int
+  ajolotary    Ajolotary @relation(fields: [ajolotaryId], references: [id], onDelete: Cascade)
+  devices      Device[]
+  axolotls     Axolotl[]
 }
 
+enum TankStatus {
+  ACTIVE
+  INACTIVE
+  MAINTENANCE
+  QUARANTINE
+}
+
+// Dispositivos y sensores
 model Device {
-  id            Int         @id @default(autoincrement())
-  tankId        Int
-  tank          Tank        @relation(fields: [tankId], references: [id])
-  sensors       Sensor[]
-  measurements  Measurement[]
+  id           Int           @id @default(autoincrement())
+  name         String        @db.VarChar(50)
+  serialNumber String        @unique @db.VarChar(50)
+  status       DeviceStatus  @default(ACTIVE)
+  tankId       Int
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  tank         Tank          @relation(fields: [tankId], references: [id], onDelete: Cascade)
+  sensors      Sensor[]
+  measurements Measurement[]
+}
+
+enum DeviceStatus {
+  ACTIVE
+  INACTIVE
+  MAINTENANCE
 }
 
 model Sensor {
-  id            Int         @id @default(autoincrement())
-  model         String
-  lastConnection DateTime
-  magnitude     String
-  type          String
-  deviceId      Int
-  device        Device      @relation(fields: [deviceId], references: [id])
+  id             Int          @id @default(autoincrement())
+  model          String       @db.VarChar(50)
+  serialNumber   String       @unique @db.VarChar(50)
+  lastConnection DateTime     @default(now())
+  magnitude      Magnitude    @relation(fields: [magnitudeId], references: [id])
+  magnitudeId    Int
+  type           SensorType
+  status         SensorStatus @default(ACTIVE)
+  deviceId       Int
+  device         Device       @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  measurements   Measurement[]
+  calibratedAt   DateTime     @default(now())
+  nextCalibrationAt DateTime
 }
 
+enum SensorType {
+  TEMPERATURE
+  PH
+  OXYGEN
+  CONDUCTIVITY
+  AMMONIA
+}
+
+enum SensorStatus {
+  ACTIVE
+  INACTIVE
+  FAULTY
+  CALIBRATING
+}
+
+// Mediciones y parámetros
 model Measurement {
-  id            Int         @id @default(autoincrement())
-  dateTime      DateTime
-  deviceId      Int
-  device        Device      @relation(fields: [deviceId], references: [id])
-  alerts        Alert[]
-  parameters    Parameter[]
+  id         Int       @id @default(autoincrement())
+  dateTime   DateTime  @default(now())
+  deviceId   Int
+  sensorId   Int
+  device     Device    @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  sensor     Sensor    @relation(fields: [sensorId], references: [id], onDelete: Cascade)
+  alerts     Alert[]
+  parameters MeasurementParameter[]
+  isValid    Boolean   @default(true)
 }
 
+model MeasurementParameter {
+  id            Int         @id @default(autoincrement())
+  measurementId Int
+  parameterId   Int
+  value         Decimal     @db.Decimal(10,2)
+  measurement   Measurement @relation(fields: [measurementId], references: [id], onDelete: Cascade)
+  parameter     Parameter   @relation(fields: [parameterId], references: [id])
+}
+
+// Gestión de magnitudes y parámetros
+model Magnitude {
+  id          Int       @id @default(autoincrement())
+  name        String    @unique @db.VarChar(50)
+  unit        String    @db.VarChar(20)
+  description String?   @db.Text
+  sensors     Sensor[]
+  parameters  Parameter[]
+}
+
+model Parameter {
+  id               Int                   @id @default(autoincrement())
+  name             String                @db.VarChar(50)
+  magnitudeId      Int
+  magnitude        Magnitude             @relation(fields: [magnitudeId], references: [id])
+  description      String?               @db.Text
+  measurementRules MeasurementRule[]
+  measurements     MeasurementParameter[]
+}
+
+// Gestión de ajolotes
 model Axolotl {
-  id            Int         @id @default(autoincrement())
-  name          String
-  species       String
-  age           Int
-  health        String
-  size          Float
-  stage         String
-  tankId        Int
-  tank          Tank        @relation(fields: [tankId], references: [id])
+  id          Int          @id @default(autoincrement())
+  name        String       @db.VarChar(50)
+  species     String       @db.VarChar(50)
+  age         Int
+  health      HealthStatus
+  size        Decimal      @db.Decimal(10,2)
+  weight      Decimal      @db.Decimal(10,2)
+  stage       LifeStage
+  tankId      Int
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  tank        Tank         @relation(fields: [tankId], references: [id], onDelete: Cascade)
+  observations String[]
 }
 
+enum HealthStatus {
+  HEALTHY
+  SICK
+  CRITICAL
+  RECOVERING
+  QUARANTINE
+}
+
+enum LifeStage {
+  EGG
+  LARVAE
+  JUVENILE
+  ADULT
+  BREEDING
+}
+
+// Sistema de alertas
 model Alert {
   id            Int         @id @default(autoincrement())
   measurementId Int
-  alertType     String
-  description   String
+  alertType     AlertType
+  description   String      @db.Text
   priority      Priority
-  status        String
-  measurement   Measurement @relation(fields: [measurementId], references: [id])
+  status        AlertStatus @default(PENDING)
+  createdAt     DateTime    @default(now())
+  measurement   Measurement @relation(fields: [measurementId], references: [id], onDelete: Cascade)
+  resolvedAt    DateTime?
+  resolvedBy    Int?
+  resolver      User?       @relation("AlertResolver", fields: [resolvedBy], references: [id])
+  notes         String?     @db.Text
+}
+
+enum AlertType {
+  PARAMETER_OUT_OF_RANGE
+  DEVICE_MALFUNCTION
+  MAINTENANCE_REQUIRED
+  SYSTEM_ERROR
+  CALIBRATION_NEEDED
+  HEALTH_ISSUE
+}
+
+enum AlertStatus {
+  PENDING
+  ACKNOWLEDGED
+  RESOLVED
+  DISMISSED
+  ESCALATED
 }
 
 enum Priority {
+  CRITICAL
   HIGH
   MEDIUM
   LOW
 }
 
+// Reglas de medición
 model MeasurementRule {
-  id            Int         @id @default(autoincrement())
-  optimalMin    Float
-  optimalMax    Float
-  action        String
-  parameterId   Int
-  parameter     Parameter   @relation(fields: [parameterId], references: [id])
-}
-
-model Parameter {
-  id                Int               @id @default(autoincrement())
-  type              String
-  magnitude         String
-  measurementRules  MeasurementRule[]
-  measurements      Measurement[]
+  id          Int       @id @default(autoincrement())
+  optimalMin  Decimal   @db.Decimal(10,2)
+  optimalMax  Decimal   @db.Decimal(10,2)
+  warningMin  Decimal   @db.Decimal(10,2)
+  warningMax  Decimal   @db.Decimal(10,2)
+  criticalMin Decimal   @db.Decimal(10,2)
+  criticalMax Decimal   @db.Decimal(10,2)
+  action      String    @db.Text
+  parameterId Int
+  parameter   Parameter @relation(fields: [parameterId], references: [id], onDelete: Cascade)
+  active      Boolean   @default(true)
 }

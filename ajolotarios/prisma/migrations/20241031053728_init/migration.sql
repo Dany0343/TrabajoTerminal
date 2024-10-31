@@ -100,6 +100,7 @@ CREATE TABLE "MeasurementRule" (
     "optimalMin" DOUBLE PRECISION NOT NULL,
     "optimalMax" DOUBLE PRECISION NOT NULL,
     "action" TEXT NOT NULL,
+    "parameterId" INTEGER NOT NULL,
 
     CONSTRAINT "MeasurementRule_pkey" PRIMARY KEY ("id")
 );
@@ -159,7 +160,7 @@ ALTER TABLE "Axolotl" ADD CONSTRAINT "Axolotl_tankId_fkey" FOREIGN KEY ("tankId"
 ALTER TABLE "Alert" ADD CONSTRAINT "Alert_measurementId_fkey" FOREIGN KEY ("measurementId") REFERENCES "Measurement"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "MeasurementRule" ADD CONSTRAINT "MeasurementRule_id_fkey" FOREIGN KEY ("id") REFERENCES "Parameter"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "MeasurementRule" ADD CONSTRAINT "MeasurementRule_parameterId_fkey" FOREIGN KEY ("parameterId") REFERENCES "Parameter"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "_AjolotaryToUser" ADD CONSTRAINT "_AjolotaryToUser_A_fkey" FOREIGN KEY ("A") REFERENCES "Ajolotary"("id") ON DELETE CASCADE ON UPDATE CASCADE;
