@@ -8,7 +8,6 @@ export async function GET() {
     const alerts = await db.alert.findMany({
       include: {
         measurement: true,
-        resolver: true,
       },
     });
     return NextResponse.json(alerts);
