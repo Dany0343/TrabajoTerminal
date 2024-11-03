@@ -130,6 +130,7 @@ export default function TanksPage() {
           {/* Puedes agregar componentes de resumen aquí */}
         </CardContent>
       </Card>
+      {/* comment */}
       
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-2xl font-semibold">Lista de Tanques</h2>
