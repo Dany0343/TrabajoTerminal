@@ -1,7 +1,7 @@
 'use client'
 
-import { useState } from 'react'
-import { Plus, Edit, Trash2, AlertTriangle, Bell } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Plus, Edit, Trash2, AlertTriangle } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -10,57 +10,158 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Textarea } from '@/components/ui/textarea'
 
 type Alert = {
   id: number
-  message: string
-  severity: 'Baja' | 'Media' | 'Alta'
-  date: string
-  tank: string
-  status: 'Activa' | 'Resuelta'
+  measurementId: number
+  alertType: 'PARAMETER_OUT_OF_RANGE' | 'DEVICE_MALFUNCTION' | 'MAINTENANCE_REQUIRED' | 'SYSTEM_ERROR' | 'CALIBRATION_NEEDED'
+  description: string
+  priority: 'HIGH' | 'MEDIUM' | 'LOW'
+  status: 'PENDING' | 'RESOLVED' | 'DISMISSED'
+  createdAt: string
+  resolvedAt?: string
+  resolvedBy?: number
+  notes?: string
+  measurement?: Measurement
+  resolver?: User
+}
+
+type Measurement = {
+  id: number
+  // Otros campos según tu modelo
+}
+
+type User = {
+  id: number
+  firstName: string
+  lastName: string
 }
 
 export default function AlertsPage() {
-  const [alerts, setAlerts] = useState<Alert[]>([
-    { id: 1, message: 'Temperatura alta en Tanque A', severity: 'Alta', date: '2024-03-10', tank: 'Tanque A', status: 'Activa' },
-    { id: 2, message: 'Nivel de pH bajo en Tanque B', severity: 'Media', date: '2024-03-09', tank: 'Tanque B', status: 'Activa' },
-    { id: 3, message: 'Nivel de oxígeno bajo en Tanque C', severity: 'Baja', date: '2024-03-08', tank: 'Tanque C', status: 'Resuelta' },
-  ])
-  const [newAlert, setNewAlert] = useState<Omit<Alert, 'id'>>({ message: '', severity: 'Baja', date: '', tank: '', status: 'Activa' })
+  const [alerts, setAlerts] = useState<Alert[]>([])
+  const [measurements, setMeasurements] = useState<Measurement[]>([])
+  const [users, setUsers] = useState<User[]>([])
+  const [newAlert, setNewAlert] = useState<Omit<Alert, 'id' | 'createdAt' | 'measurement' | 'resolver'>>({
+    measurementId: 0,
+    alertType: 'PARAMETER_OUT_OF_RANGE',
+    description: '',
+    priority: 'MEDIUM',
+    status: 'PENDING',
+    resolvedAt: '',
+    resolvedBy: undefined,
+    notes: '',
+  })
   const [isEditing, setIsEditing] = useState(false)
   const [editingId, setEditingId] = useState<number | null>(null)
 
-  const addOrUpdateAlert = () => {
+  useEffect(() => {
+    // Obtener alertas
+    fetch('/api/alerts')
+      .then((res) => res.json())
+      .then((data) => setAlerts(data))
+      .catch((error) => console.error(error))
+
+    // Obtener mediciones
+    fetch('/api/measurements')
+      .then((res) => res.json())
+      .then((data) => setMeasurements(data))
+      .catch((error) => console.error(error))
+
+    // Obtener usuarios
+    fetch('/api/users')
+      .then((res) => res.json())
+      .then((data) => setUsers(data))
+      .catch((error) => console.error(error))
+  }, [])
+
+  const addOrUpdateAlert = async () => {
     if (isEditing && editingId !== null) {
-      setAlerts(alerts.map(alert => alert.id === editingId ? { ...newAlert, id: editingId } : alert))
-      setIsEditing(false)
-      setEditingId(null)
+      // Actualizar alerta
+      const response = await fetch(`/api/alerts/${editingId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(newAlert),
+      })
+      if (response.ok) {
+        const updatedAlert = await response.json()
+        setAlerts(alerts.map((alert) => (alert.id === editingId ? updatedAlert : alert)))
+        setIsEditing(false)
+        setEditingId(null)
+      } else {
+        console.error('Error al actualizar la alerta')
+      }
     } else {
-      setAlerts([...alerts, { ...newAlert, id: alerts.length + 1 }])
+      // Agregar nueva alerta
+      const response = await fetch('/api/alerts', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(newAlert),
+      })
+      if (response.ok) {
+        const createdAlert = await response.json()
+        setAlerts([...alerts, createdAlert])
+      } else {
+        console.error('Error al crear la alerta')
+      }
     }
-    setNewAlert({ message: '', severity: 'Baja', date: '', tank: '', status: 'Activa' })
+    // Restablecer formulario
+    setNewAlert({
+      measurementId: 0,
+      alertType: 'PARAMETER_OUT_OF_RANGE',
+      description: '',
+      priority: 'MEDIUM',
+      status: 'PENDING',
+      resolvedAt: '',
+      resolvedBy: undefined,
+      notes: '',
+    })
   }
 
   const startEditing = (alert: Alert) => {
-    setNewAlert(alert)
+    setNewAlert({
+      measurementId: alert.measurementId,
+      alertType: alert.alertType,
+      description: alert.description,
+      priority: alert.priority,
+      status: alert.status,
+      resolvedAt: alert.resolvedAt || '',
+      resolvedBy: alert.resolvedBy,
+      notes: alert.notes || '',
+    })
     setIsEditing(true)
     setEditingId(alert.id)
   }
 
-  const deleteAlert = (id: number) => {
-    setAlerts(alerts.filter(alert => alert.id !== id))
+  const deleteAlert = async (id: number) => {
+    const response = await fetch(`/api/alerts/${id}`, {
+      method: 'DELETE',
+    })
+    if (response.ok) {
+      setAlerts(alerts.filter((alert) => alert.id !== id))
+    } else {
+      console.error('Error al eliminar la alerta')
+    }
   }
 
-  const getSeverityColor = (severity: Alert['severity']) => {
-    switch (severity) {
-      case 'Baja': return 'bg-green-500'
-      case 'Media': return 'bg-yellow-500'
-      case 'Alta': return 'bg-red-500'
+  const getPriorityColor = (priority: Alert['priority']) => {
+    switch (priority) {
+      case 'LOW': return 'bg-green-500'
+      case 'MEDIUM': return 'bg-yellow-500'
+      case 'HIGH': return 'bg-orange-500'
     }
   }
 
   const getStatusColor = (status: Alert['status']) => {
-    return status === 'Activa' ? 'bg-blue-500' : 'bg-gray-500'
+    switch (status) {
+      case 'PENDING': return 'bg-blue-500'
+      case 'RESOLVED': return 'bg-green-500'
+      case 'DISMISSED': return 'bg-gray-500'
+    }
   }
 
   return (
@@ -71,18 +172,18 @@ export default function AlertsPage() {
           <CardDescription>Monitorea y administra las alertas del sistema</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {['Baja', 'Media', 'Alta'].map((severity) => (
-              <Card key={severity}>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            {['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'].map((priority) => (
+              <Card key={priority}>
                 <CardHeader>
                   <CardTitle className="flex items-center">
-                    <AlertTriangle className={`mr-2 h-5 w-5 ${getSeverityColor(severity as Alert['severity'])}`} />
-                    Alertas {severity}s
+                    <AlertTriangle className={`mr-2 h-5 w-5 ${getPriorityColor(priority as Alert['priority'])}`} />
+                    Prioridad {priority}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="text-3xl font-bold">
-                    {alerts.filter(alert => alert.severity === severity && alert.status === 'Activa').length}
+                    {alerts.filter(alert => alert.priority === priority && alert.status !== 'RESOLVED').length}
                   </div>
                   <p className="text-sm text-muted-foreground">Alertas activas</p>
                 </CardContent>
@@ -105,58 +206,124 @@ export default function AlertsPage() {
               <DialogTitle>{isEditing ? 'Editar Alerta' : 'Agregar Nueva Alerta'}</DialogTitle>
             </DialogHeader>
             <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="message" className="text-right">Mensaje</Label>
-                <Input
-                  id="message"
-                  value={newAlert.message}
-                  onChange={(e) => setNewAlert({...newAlert, message: e.target.value})}
+              <div className="grid grid-cols-4 items-start gap-4">
+                <Label htmlFor="description" className="text-right">Descripción</Label>
+                <Textarea
+                  id="description"
+                  value={newAlert.description}
+                  onChange={(e) => setNewAlert({ ...newAlert, description: e.target.value })}
                   className="col-span-3"
                 />
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="severity" className="text-right">Severidad</Label>
-                <Select onValueChange={(value) => setNewAlert({...newAlert, severity: value as Alert['severity']})}>
+                <Label htmlFor="alertType" className="text-right">Tipo de Alerta</Label>
+                <Select
+                  onValueChange={(value) => setNewAlert({ ...newAlert, alertType: value as Alert['alertType'] })}
+                  value={newAlert.alertType}
+                >
                   <SelectTrigger className="col-span-3">
-                    <SelectValue placeholder="Selecciona la severidad" />
+                    <SelectValue placeholder="Selecciona el tipo de alerta" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Baja">Baja</SelectItem>
-                    <SelectItem value="Media">Media</SelectItem>
-                    <SelectItem value="Alta">Alta</SelectItem>
+                    <SelectItem value="PARAMETER_OUT_OF_RANGE">Parámetro fuera de rango</SelectItem>
+                    <SelectItem value="DEVICE_MALFUNCTION">Fallo de dispositivo</SelectItem>
+                    <SelectItem value="MAINTENANCE_REQUIRED">Requiere mantenimiento</SelectItem>
+                    <SelectItem value="SYSTEM_ERROR">Error de sistema</SelectItem>
+                    <SelectItem value="CALIBRATION_NEEDED">Necesita calibración</SelectItem>
+                    <SelectItem value="HEALTH_ISSUE">Problema de salud</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="date" className="text-right">Fecha</Label>
-                <Input
-                  id="date"
-                  type="date"
-                  value={newAlert.date}
-                  onChange={(e) => setNewAlert({...newAlert, date: e.target.value})}
-                  className="col-span-3"
-                />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="tank" className="text-right">Tanque</Label>
-                <Input
-                  id="tank"
-                  value={newAlert.tank}
-                  onChange={(e) => setNewAlert({...newAlert, tank: e.target.value})}
-                  className="col-span-3"
-                />
+                <Label htmlFor="priority" className="text-right">Prioridad</Label>
+                <Select
+                  onValueChange={(value) => setNewAlert({ ...newAlert, priority: value as Alert['priority'] })}
+                  value={newAlert.priority}
+                >
+                  <SelectTrigger className="col-span-3">
+                    <SelectValue placeholder="Selecciona la prioridad" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="LOW">Baja</SelectItem>
+                    <SelectItem value="MEDIUM">Media</SelectItem>
+                    <SelectItem value="HIGH">Alta</SelectItem>
+                    <SelectItem value="CRITICAL">Crítica</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="status" className="text-right">Estado</Label>
-                <Select onValueChange={(value) => setNewAlert({...newAlert, status: value as Alert['status']})}>
+                <Select
+                  onValueChange={(value) => setNewAlert({ ...newAlert, status: value as Alert['status'] })}
+                  value={newAlert.status}
+                >
                   <SelectTrigger className="col-span-3">
                     <SelectValue placeholder="Selecciona el estado" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Activa">Activa</SelectItem>
-                    <SelectItem value="Resuelta">Resuelta</SelectItem>
+                    <SelectItem value="PENDING">Pendiente</SelectItem>
+                    <SelectItem value="ACKNOWLEDGED">Reconocida</SelectItem>
+                    <SelectItem value="RESOLVED">Resuelta</SelectItem>
+                    <SelectItem value="DISMISSED">Descartada</SelectItem>
+                    <SelectItem value="ESCALATED">Escalada</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="measurementId" className="text-right">Medición</Label>
+                <Select
+                  onValueChange={(value) => setNewAlert({ ...newAlert, measurementId: Number(value) })}
+                  value={newAlert.measurementId ? newAlert.measurementId.toString() : ''}
+                >
+                  <SelectTrigger className="col-span-3">
+                    <SelectValue placeholder="Selecciona una medición" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {measurements.map((measurement) => (
+                      <SelectItem key={measurement.id} value={measurement.id.toString()}>
+                        Medición {measurement.id}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              {/* Campos opcionales */}
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="resolvedAt" className="text-right">Fecha de Resolución</Label>
+                <Input
+                  id="resolvedAt"
+                  type="date"
+                  value={newAlert.resolvedAt}
+                  onChange={(e) => setNewAlert({ ...newAlert, resolvedAt: e.target.value })}
+                  className="col-span-3"
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="resolvedBy" className="text-right">Resuelta por</Label>
+                <Select
+                  onValueChange={(value) => setNewAlert({ ...newAlert, resolvedBy: Number(value) })}
+                  value={newAlert.resolvedBy ? newAlert.resolvedBy.toString() : ''}
+                >
+                  <SelectTrigger className="col-span-3">
+                    <SelectValue placeholder="Selecciona un usuario" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {users.map((user) => (
+                      <SelectItem key={user.id} value={user.id.toString()}>
+                        {user.firstName} {user.lastName}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid grid-cols-4 items-start gap-4">
+                <Label htmlFor="notes" className="text-right">Notas</Label>
+                <Textarea
+                  id="notes"
+                  value={newAlert.notes}
+                  onChange={(e) => setNewAlert({ ...newAlert, notes: e.target.value })}
+                  className="col-span-3"
+                />
               </div>
             </div>
             <Button onClick={addOrUpdateAlert}>{isEditing ? 'Actualizar Alerta' : 'Agregar Alerta'}</Button>
@@ -167,30 +334,28 @@ export default function AlertsPage() {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Mensaje</TableHead>
-            <TableHead>Severidad</TableHead>
-            <TableHead>Fecha</TableHead>
-            <TableHead>Tanque</TableHead>
+            <TableHead>Descripción</TableHead>
+            <TableHead>Prioridad</TableHead>
             <TableHead>Estado</TableHead>
+            <TableHead>Medición</TableHead>
             <TableHead>Acciones</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {alerts.map((alert) => (
             <TableRow key={alert.id}>
-              <TableCell className="font-medium">{alert.message}</TableCell>
+              <TableCell className="font-medium">{alert.description}</TableCell>
               <TableCell>
-                <Badge className={`${getSeverityColor(alert.severity)} text-white`}>
-                  {alert.severity}
+                <Badge className={`${getPriorityColor(alert.priority)} text-white`}>
+                  {alert.priority}
                 </Badge>
               </TableCell>
-              <TableCell>{alert.date}</TableCell>
-              <TableCell>{alert.tank}</TableCell>
               <TableCell>
                 <Badge className={`${getStatusColor(alert.status)} text-white`}>
                   {alert.status}
                 </Badge>
               </TableCell>
+              <TableCell>{alert.measurementId}</TableCell>
               <TableCell>
                 <div className="flex space-x-2">
                   <Button variant="outline" size="sm" onClick={() => startEditing(alert)}>

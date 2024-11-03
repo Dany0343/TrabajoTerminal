@@ -1,53 +1,122 @@
 'use client'
 
-import { useState } from 'react'
-import { Plus, Edit, Trash2, DropletIcon } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Plus, Edit, Trash2 } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Progress } from "@/components/ui/progress"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
 type Tank = {
   id: number
   name: string
   capacity: number
-  currentOccupancy: number
-  temperature: number
-  ph: number
+  observations: string
+  status: string
+  ajolotaryId: number
+  ajolotary?: Ajolotary
+}
+
+type Ajolotary = {
+  id: number
+  name: string
 }
 
 export default function TanksPage() {
-  const [tanks, setTanks] = useState<Tank[]>([
-    { id: 1, name: 'Tanque A', capacity: 100, currentOccupancy: 80, temperature: 22, ph: 7.2 },
-    { id: 2, name: 'Tanque B', capacity: 150, currentOccupancy: 120, temperature: 23, ph: 7.0 },
-    { id: 3, name: 'Tanque C', capacity: 200, currentOccupancy: 150, temperature: 21, ph: 7.5 },
-  ])
-  const [newTank, setNewTank] = useState<Omit<Tank, 'id'>>({ name: '', capacity: 0, currentOccupancy: 0, temperature: 20, ph: 7.0 })
+  const [tanks, setTanks] = useState<Tank[]>([])
+  const [ajolotaries, setAjolotaries] = useState<Ajolotary[]>([])
+  const [newTank, setNewTank] = useState<Omit<Tank, 'id'>>({
+    name: '',
+    capacity: 0,
+    observations: '',
+    status: 'ACTIVE',
+    ajolotaryId: 0,
+  })
   const [isEditing, setIsEditing] = useState(false)
   const [editingId, setEditingId] = useState<number | null>(null)
 
-  const addOrUpdateTank = () => {
+  useEffect(() => {
+    // Obtener tanques
+    fetch('/api/tanks')
+      .then((res) => res.json())
+      .then((data) => setTanks(data))
+      .catch((error) => console.error(error))
+
+    // Obtener ajolotarios
+    fetch('/api/ajolotaries')
+      .then((res) => res.json())
+      .then((data) => setAjolotaries(data))
+      .catch((error) => console.error(error))
+  }, [])
+
+  const addOrUpdateTank = async () => {
     if (isEditing && editingId !== null) {
-      setTanks(tanks.map(tank => tank.id === editingId ? { ...newTank, id: editingId } : tank))
-      setIsEditing(false)
-      setEditingId(null)
+      // Actualizar tanque
+      const response = await fetch(`/api/tanks/${editingId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(newTank),
+      })
+      if (response.ok) {
+        const updatedTank = await response.json()
+        setTanks(tanks.map((tank) => (tank.id === editingId ? updatedTank : tank)))
+        setIsEditing(false)
+        setEditingId(null)
+      } else {
+        console.error('Error al actualizar el tanque')
+      }
     } else {
-      setTanks([...tanks, { ...newTank, id: tanks.length + 1 }])
+      // Agregar nuevo tanque
+      const response = await fetch('/api/tanks', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(newTank),
+      })
+      if (response.ok) {
+        const createdTank = await response.json()
+        setTanks([...tanks, createdTank])
+      } else {
+        console.error('Error al crear el tanque')
+      }
     }
-    setNewTank({ name: '', capacity: 0, currentOccupancy: 0, temperature: 20, ph: 7.0 })
+    // Restablecer formulario
+    setNewTank({
+      name: '',
+      capacity: 0,
+      observations: '',
+      status: 'ACTIVE',
+      ajolotaryId: 0,
+    })
   }
 
   const startEditing = (tank: Tank) => {
-    setNewTank(tank)
+    setNewTank({
+      name: tank.name,
+      capacity: tank.capacity,
+      observations: tank.observations,
+      status: tank.status,
+      ajolotaryId: tank.ajolotaryId,
+    })
     setIsEditing(true)
     setEditingId(tank.id)
   }
 
-  const deleteTank = (id: number) => {
-    setTanks(tanks.filter(tank => tank.id !== id))
+  const deleteTank = async (id: number) => {
+    const response = await fetch(`/api/tanks/${id}`, {
+      method: 'DELETE',
+    })
+    if (response.ok) {
+      setTanks(tanks.filter((tank) => tank.id !== id))
+    } else {
+      console.error('Error al eliminar el tanque')
+    }
   }
 
   return (
@@ -58,33 +127,7 @@ export default function TanksPage() {
           <CardDescription>Administra los tanques de tu sistema de ajolotes</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {tanks.slice(0, 3).map((tank) => (
-              <Card key={tank.id}>
-                <CardHeader>
-                  <CardTitle>{tank.name}</CardTitle>
-                  <CardDescription>Capacidad: {tank.capacity}L</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    <div className="flex justify-between items-center">
-                      <span>Ocupación:</span>
-                      <span>{tank.currentOccupancy}L / {tank.capacity}L</span>
-                    </div>
-                    <Progress value={(tank.currentOccupancy / tank.capacity) * 100} />
-                    <div className="flex justify-between items-center">
-                      <span>Temperatura:</span>
-                      <span>{tank.temperature}°C</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span>pH:</span>
-                      <span>{tank.ph}</span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+          {/* Puedes agregar componentes de resumen aquí */}
         </CardContent>
       </Card>
       
@@ -121,35 +164,48 @@ export default function TanksPage() {
                 />
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="occupancy" className="text-right">Ocupación (L)</Label>
+                <Label htmlFor="observations" className="text-right">Observaciones</Label>
                 <Input
-                  id="occupancy"
-                  type="number"
-                  value={newTank.currentOccupancy}
-                  onChange={(e) => setNewTank({...newTank, currentOccupancy: Number(e.target.value)})}
+                  id="observations"
+                  value={newTank.observations}
+                  onChange={(e) => setNewTank({...newTank, observations: e.target.value})}
                   className="col-span-3"
                 />
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="temperature" className="text-right">Temperatura (°C)</Label>
-                <Input
-                  id="temperature"
-                  type="number"
-                  value={newTank.temperature}
-                  onChange={(e) => setNewTank({...newTank, temperature: Number(e.target.value)})}
-                  className="col-span-3"
-                />
+                <Label htmlFor="status" className="text-right">Estado</Label>
+                <Select
+                  onValueChange={(value) => setNewTank({ ...newTank, status: value })}
+                  value={newTank.status}
+                >
+                  <SelectTrigger className="col-span-3">
+                    <SelectValue placeholder="Seleccionar estado" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ACTIVE">Activo</SelectItem>
+                    <SelectItem value="INACTIVE">Inactivo</SelectItem>
+                    <SelectItem value="MAINTENANCE">Mantenimiento</SelectItem>
+                    <SelectItem value="QUARANTINE">Cuarentena</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="ph" className="text-right">pH</Label>
-                <Input
-                  id="ph"
-                  type="number"
-                  step="0.1"
-                  value={newTank.ph}
-                  onChange={(e) => setNewTank({...newTank, ph: Number(e.target.value)})}
-                  className="col-span-3"
-                />
+                <Label htmlFor="ajolotary" className="text-right">Ajolotario</Label>
+                <Select
+                  onValueChange={(value) => setNewTank({ ...newTank, ajolotaryId: Number(value) })}
+                  value={newTank.ajolotaryId.toString()}
+                >
+                  <SelectTrigger className="col-span-3">
+                    <SelectValue placeholder="Seleccionar ajolotario" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ajolotaries.map((ajolotary) => (
+                      <SelectItem key={ajolotary.id} value={ajolotary.id.toString()}>
+                        {ajolotary.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
             <Button onClick={addOrUpdateTank}>{isEditing ? 'Actualizar Tanque' : 'Agregar Tanque'}</Button>
@@ -162,9 +218,9 @@ export default function TanksPage() {
           <TableRow>
             <TableHead>Nombre</TableHead>
             <TableHead>Capacidad</TableHead>
-            <TableHead>Ocupación Actual</TableHead>
-            <TableHead>Temperatura</TableHead>
-            <TableHead>pH</TableHead>
+            <TableHead>Observaciones</TableHead>
+            <TableHead>Estado</TableHead>
+            <TableHead>Ajolotario</TableHead>
             <TableHead>Acciones</TableHead>
           </TableRow>
         </TableHeader>
@@ -173,15 +229,9 @@ export default function TanksPage() {
             <TableRow key={tank.id}>
               <TableCell>{tank.name}</TableCell>
               <TableCell>{tank.capacity}L</TableCell>
-              <TableCell>
-                <div className="flex items-center">
-                  <DropletIcon className="mr-2 h-4 w-4 text-blue-500" />
-                  <span>{tank.currentOccupancy}L</span>
-                  <Progress value={(tank.currentOccupancy / tank.capacity) * 100} className="ml-2 w-20" />
-                </div>
-              </TableCell>
-              <TableCell>{tank.temperature}°C</TableCell>
-              <TableCell>{tank.ph}</TableCell>
+              <TableCell>{tank.observations}</TableCell>
+              <TableCell>{tank.status}</TableCell>
+              <TableCell>{tank.ajolotary?.name || ''}</TableCell>
               <TableCell>
                 <div className="flex space-x-2">
                   <Button variant="outline" size="sm" onClick={() => startEditing(tank)}>
