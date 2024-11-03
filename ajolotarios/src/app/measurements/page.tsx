@@ -36,7 +36,7 @@ import {
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 
-type SensorStatus = 'ACTIVE' | 'INACTIVE' | 'FAULTY' | 'CALIBRATING';
+type SensorStatus = 'ACTIVE' | 'INACTIVE';
 
 type Sensor = {
   id: number;
@@ -212,10 +212,6 @@ export default function SensorsPage() {
         return <Badge className="bg-green-500 text-white">Activo</Badge>;
       case 'INACTIVE':
         return <Badge className="bg-gray-500 text-white">Inactivo</Badge>;
-      case 'FAULTY':
-        return <Badge className="bg-red-500 text-white">Defectuoso</Badge>;
-      case 'CALIBRATING':
-        return <Badge className="bg-yellow-500 text-white">Calibrando</Badge>;
       default:
         return null;
     }
