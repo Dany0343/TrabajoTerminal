@@ -13,7 +13,6 @@ export async function GET(
       where: { id: Number(params.id) },
       include: {
         measurement: true,
-        resolver: true,
       },
     });
     if (!alert) {
