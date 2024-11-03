@@ -13,7 +13,6 @@ export async function GET(
       include: {
         device: true,
         type: true,
-        status: true,
         measurements: true,
       },
     });

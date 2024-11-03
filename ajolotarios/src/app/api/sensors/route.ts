@@ -9,7 +9,6 @@ export async function GET() {
       include: {
         device: true,
         type: true,
-        status: true,
         measurements: true,
       },
     });
@@ -47,7 +46,6 @@ export async function POST(request: Request) {
         lastConnection: lastConnection ? new Date(lastConnection) : undefined,
         magnitude,
         typeId,
-        statusId,
         deviceId,
         calibratedAt: calibratedAt ? new Date(calibratedAt) : undefined,
       },
