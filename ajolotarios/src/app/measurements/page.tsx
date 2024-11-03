@@ -31,7 +31,7 @@ import { Textarea } from '@/components/ui/textarea';
 
 // Definir tipos separados para los parámetros del formulario
 type FormMeasurementParameter = {
-  id?: number; // Opcional, ya que no existe al crear uno nuevo
+  id?: number; // Opcional para permitir la creación de nuevos parámetros
   parameterId: number;
   value: number;
 };
@@ -367,7 +367,7 @@ export default function MeasurementsPage() {
     <div className="container mx-auto py-10">
       {/* Mensajes de éxito y error */}
       {successMessage && (
-        <div className="mb-4 p-4 bg-green-100 text-green-700 rounded">
+        <div className="mb-4 p-4 bg-green-100 text-green-700 rounded flex justify-between items-center">
           {successMessage}
           <button onClick={() => setSuccessMessage('')} className="ml-4">
             X
@@ -375,7 +375,7 @@ export default function MeasurementsPage() {
         </div>
       )}
       {errorMessage && (
-        <div className="mb-4 p-4 bg-red-100 text-red-700 rounded">
+        <div className="mb-4 p-4 bg-red-100 text-red-700 rounded flex justify-between items-center">
           {errorMessage}
           <button onClick={() => setErrorMessage('')} className="ml-4">
             X
