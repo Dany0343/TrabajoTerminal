@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Plus, Edit, Trash2, Users } from 'lucide-react'
+import { Plus, Edit, Trash2 } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -43,7 +43,8 @@ export default function AjolotariesPage() {
     permitNumber: '',
     active: true,
   })
-  const [isEditing, setIsEditing] = useState(false)
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [editingId, setEditingId] = useState<number | null>(null)
 
   useEffect(() => {
@@ -54,8 +55,34 @@ export default function AjolotariesPage() {
       .catch((error) => console.error(error))
   }, [])
 
-  const addOrUpdateAjolotary = async () => {
-    if (isEditing && editingId !== null) {
+  const addAjolotary = async () => {
+    // Agregar nuevo ajolotario
+    const response = await fetch('/api/ajolotaries', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(newAjolotary),
+    })
+    if (response.ok) {
+      const createdAjolotary = await response.json()
+      setAjolotaries([...ajolotaries, createdAjolotary])
+      setIsAddDialogOpen(false)
+      // Restablecer formulario
+      setNewAjolotary({
+        name: '',
+        location: '',
+        description: '',
+        permitNumber: '',
+        active: true,
+      })
+    } else {
+      console.error('Error al crear el ajolotario')
+    }
+  }
+
+  const updateAjolotary = async () => {
+    if (editingId !== null) {
       // Actualizar ajolotario
       const response = await fetch(`/api/ajolotaries/${editingId}`, {
         method: 'PUT',
@@ -67,35 +94,20 @@ export default function AjolotariesPage() {
       if (response.ok) {
         const updatedAjolotary = await response.json()
         setAjolotaries(ajolotaries.map((ajolotary) => (ajolotary.id === editingId ? updatedAjolotary : ajolotary)))
-        setIsEditing(false)
+        setIsEditDialogOpen(false)
         setEditingId(null)
+        // Restablecer formulario
+        setNewAjolotary({
+          name: '',
+          location: '',
+          description: '',
+          permitNumber: '',
+          active: true,
+        })
       } else {
         console.error('Error al actualizar el ajolotario')
       }
-    } else {
-      // Agregar nuevo ajolotario
-      const response = await fetch('/api/ajolotaries', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(newAjolotary),
-      })
-      if (response.ok) {
-        const createdAjolotary = await response.json()
-        setAjolotaries([...ajolotaries, createdAjolotary])
-      } else {
-        console.error('Error al crear el ajolotario')
-      }
     }
-    // Restablecer formulario
-    setNewAjolotary({
-      name: '',
-      location: '',
-      description: '',
-      permitNumber: '',
-      active: true,
-    })
   }
 
   const startEditing = (ajolotary: Ajolotary) => {
@@ -106,8 +118,8 @@ export default function AjolotariesPage() {
       permitNumber: ajolotary.permitNumber,
       active: ajolotary.active,
     })
-    setIsEditing(true)
     setEditingId(ajolotary.id)
+    setIsEditDialogOpen(true)
   }
 
   const deleteAjolotary = async (id: number) => {
@@ -149,15 +161,16 @@ export default function AjolotariesPage() {
 
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-2xl font-semibold">Lista de Ajolotarios</h2>
-        <Dialog>
+        {/* Botón para agregar ajolotario */}
+        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
           <DialogTrigger asChild>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" /> {isEditing ? 'Editar Ajolotario' : 'Agregar Ajolotario'}
+            <Button onClick={() => setIsAddDialogOpen(true)}>
+              <Plus className="mr-2 h-4 w-4" /> Agregar Ajolotario
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>{isEditing ? 'Editar Ajolotario' : 'Agregar Nuevo Ajolotario'}</DialogTitle>
+              <DialogTitle>Agregar Nuevo Ajolotario</DialogTitle>
             </DialogHeader>
             <div className="grid gap-4 py-4">
               <div className="grid grid-cols-4 items-center gap-4">
@@ -206,7 +219,7 @@ export default function AjolotariesPage() {
                 />
               </div>
             </div>
-            <Button onClick={addOrUpdateAjolotary}>{isEditing ? 'Actualizar Ajolotario' : 'Agregar Ajolotario'}</Button>
+            <Button onClick={addAjolotary}>Agregar Ajolotario</Button>
           </DialogContent>
         </Dialog>
       </div>
@@ -234,9 +247,81 @@ export default function AjolotariesPage() {
               </TableCell>
               <TableCell>
                 <div className="flex space-x-2">
-                  <Button variant="outline" size="sm" onClick={() => startEditing(ajolotary)}>
-                    <Edit className="h-4 w-4" />
-                  </Button>
+                  {/* Botón para editar ajolotario */}
+                  <Dialog open={isEditDialogOpen && editingId === ajolotary.id} onOpenChange={(open) => {
+                    if (!open) {
+                      setIsEditDialogOpen(false)
+                      setEditingId(null)
+                      // Restablecer formulario
+                      setNewAjolotary({
+                        name: '',
+                        location: '',
+                        description: '',
+                        permitNumber: '',
+                        active: true,
+                      })
+                    }
+                  }}>
+                    <DialogTrigger asChild>
+                      <Button variant="outline" size="sm" onClick={() => startEditing(ajolotary)}>
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Editar Ajolotario</DialogTitle>
+                      </DialogHeader>
+                      <div className="grid gap-4 py-4">
+                        <div className="grid grid-cols-4 items-center gap-4">
+                          <Label htmlFor="name" className="text-right">Nombre</Label>
+                          <Input
+                            id="name"
+                            value={newAjolotary.name}
+                            onChange={(e) => setNewAjolotary({ ...newAjolotary, name: e.target.value })}
+                            className="col-span-3"
+                          />
+                        </div>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                          <Label htmlFor="location" className="text-right">Ubicación</Label>
+                          <Input
+                            id="location"
+                            value={newAjolotary.location}
+                            onChange={(e) => setNewAjolotary({ ...newAjolotary, location: e.target.value })}
+                            className="col-span-3"
+                          />
+                        </div>
+                        <div className="grid grid-cols-4 items-start gap-4">
+                          <Label htmlFor="description" className="text-right">Descripción</Label>
+                          <Textarea
+                            id="description"
+                            value={newAjolotary.description}
+                            onChange={(e) => setNewAjolotary({ ...newAjolotary, description: e.target.value })}
+                            className="col-span-3"
+                          />
+                        </div>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                          <Label htmlFor="permitNumber" className="text-right">Número de Permiso</Label>
+                          <Input
+                            id="permitNumber"
+                            value={newAjolotary.permitNumber}
+                            onChange={(e) => setNewAjolotary({ ...newAjolotary, permitNumber: e.target.value })}
+                            className="col-span-3"
+                          />
+                        </div>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                          <Label htmlFor="active" className="text-right">Activo</Label>
+                          <Switch
+                            id="active"
+                            checked={newAjolotary.active}
+                            onCheckedChange={(value) => setNewAjolotary({ ...newAjolotary, active: value })}
+                            className="col-span-3"
+                          />
+                        </div>
+                      </div>
+                      <Button onClick={updateAjolotary}>Actualizar Ajolotario</Button>
+                    </DialogContent>
+                  </Dialog>
+
                   <Button variant="destructive" size="sm" onClick={() => deleteAjolotary(ajolotary.id)}>
                     <Trash2 className="h-4 w-4" />
                   </Button>
