@@ -391,20 +391,6 @@ export default function SensorsPage() {
                   className="col-span-3"
                 />
               </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="nextCalibrationAt" className="text-right">
-                  Próxima Calibración
-                </Label>
-                <Input
-                  id="nextCalibrationAt"
-                  type="datetime-local"
-                  value={newSensor.nextCalibrationAt}
-                  onChange={(e) =>
-                    setNewSensor({ ...newSensor, nextCalibrationAt: e.target.value })
-                  }
-                  className="col-span-3"
-                />
-              </div>
             </div>
             <Button onClick={addSensor}>Agregar Sensor</Button>
           </DialogContent>

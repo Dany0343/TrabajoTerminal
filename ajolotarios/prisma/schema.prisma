@@ -71,11 +71,10 @@ model SensorType {
   sensors  Sensor[]
 }
 
-// Modelo de Estado de Sensor
-model SensorStatus {
-  id       Int       @id @default(autoincrement())
-  status   String    @unique
-  sensors  Sensor[]
+// enum de Estado de Sensor
+enum SensorStatus {
+  ACTIVE
+  INACTIVE
 }
 
 // Modelo de Sensor
@@ -86,12 +85,11 @@ model Sensor {
   lastConnection    DateTime        @default(now())
   magnitude         String          @db.VarChar(50)
   typeId            Int
-  statusId          Int
   deviceId          Int
   calibratedAt      DateTime        @default(now())
   device            Device          @relation(fields: [deviceId], references: [id], onDelete: Cascade)
   type              SensorType      @relation(fields: [typeId], references: [id])
-  status            SensorStatus    @relation(fields: [statusId], references: [id])
+  status            SensorStatus    @default(ACTIVE)
   measurements      Measurement[]
 }
 
