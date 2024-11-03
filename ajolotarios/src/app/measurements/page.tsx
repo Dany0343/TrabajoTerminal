@@ -29,7 +29,7 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 
-// Tipos para el formulario
+// Tipos
 type FormMeasurementParameter = {
   id?: number; // Opcional para permitir la creación de nuevos parámetros
   parameterId: number;
@@ -44,7 +44,6 @@ type FormMeasurement = {
   parameters: FormMeasurementParameter[];
 };
 
-// Tipos según tu esquema Prisma
 type Measurement = {
   id: number;
   dateTime: string;
@@ -68,6 +67,12 @@ type MeasurementParameter = {
 type Device = {
   id: number;
   name: string;
+  serialNumber: string;
+  status: string;
+  tankId: number;
+  tank?: Tank;
+  sensors: Sensor[];
+  measurements: Measurement[];
 };
 
 type Sensor = {
@@ -124,18 +129,35 @@ type User = {
   lastName: string;
 };
 
-// Tipos para Dispositivos en el formulario
+type Tank = {
+  id: number;
+  name: string;
+  capacity: number;
+  observations?: string;
+  status: string;
+  ajolotaryId: number;
+  ajolotary?: Ajolotary;
+};
+
+type Ajolotary = {
+  id: number;
+  name: string;
+  // Otros campos según tu esquema
+};
+
 type FormDevice = {
   id?: number;
   name: string;
+  serialNumber: string;
+  tankId: number;
 };
 
-// Componente Principal
 export default function MeasurementsPage() {
   const [measurements, setMeasurements] = useState<Measurement[]>([]);
   const [devices, setDevices] = useState<Device[]>([]);
   const [sensors, setSensors] = useState<Sensor[]>([]);
   const [parameters, setParameters] = useState<Parameter[]>([]);
+  const [tanks, setTanks] = useState<Tank[]>([]);
 
   // Estado para el formulario de mediciones
   const [formMeasurement, setFormMeasurement] = useState<FormMeasurement>({
@@ -171,11 +193,12 @@ export default function MeasurementsPage() {
   const [newDevice, setNewDevice] = useState<FormDevice>({
     id: 0,
     name: '',
+    serialNumber: '',
+    tankId: 0,
   });
 
   const [editDevice, setEditDevice] = useState<Device | null>(null);
 
-  // Efecto para obtener datos al montar el componente
   useEffect(() => {
     // Obtener mediciones
     fetch('/api/measurements')
@@ -199,6 +222,12 @@ export default function MeasurementsPage() {
     fetch('/api/parameters')
       .then((res) => res.json())
       .then((data) => setParameters(data))
+      .catch((error) => console.error(error));
+
+    // Obtener tanques
+    fetch('/api/tanks')
+      .then((res) => res.json())
+      .then((data) => setTanks(data))
       .catch((error) => console.error(error));
   }, []);
 
@@ -254,7 +283,8 @@ export default function MeasurementsPage() {
           );
           setSuccessMessage('Medición actualizada exitosamente.');
         } else {
-          throw new Error('Error al actualizar la medición.');
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Error al actualizar la medición.');
         }
       } else {
         // Agregar nueva medición
@@ -268,7 +298,8 @@ export default function MeasurementsPage() {
           setMeasurements([...measurements, createdMeasurement]);
           setSuccessMessage('Medición agregada exitosamente.');
         } else {
-          throw new Error('Error al crear la medición.');
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Error al crear la medición.');
         }
       }
 
@@ -340,7 +371,8 @@ export default function MeasurementsPage() {
         setMeasurements(measurements.filter((measurement) => measurement.id !== id));
         setSuccessMessage('Medición eliminada exitosamente.');
       } else {
-        throw new Error('Error al eliminar la medición.');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Error al eliminar la medición.');
       }
     } catch (error: any) {
       console.error(error);
@@ -392,7 +424,8 @@ export default function MeasurementsPage() {
         setIsManageParametersOpen(false);
         setSuccessMessage('Parámetro agregado exitosamente.');
       } else {
-        throw new Error('Error al agregar el parámetro.');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Error al agregar el parámetro.');
       }
     } catch (error: any) {
       console.error(error);
@@ -423,7 +456,8 @@ export default function MeasurementsPage() {
         setIsManageParametersOpen(false);
         setSuccessMessage('Parámetro actualizado exitosamente.');
       } else {
-        throw new Error('Error al actualizar el parámetro.');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Error al actualizar el parámetro.');
       }
     } catch (error: any) {
       console.error(error);
@@ -447,7 +481,8 @@ export default function MeasurementsPage() {
         setParameters(parameters.filter((param) => param.id !== id));
         setSuccessMessage('Parámetro eliminado exitosamente.');
       } else {
-        throw new Error('Error al eliminar el parámetro.');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Error al eliminar el parámetro.');
       }
     } catch (error: any) {
       console.error(error);
@@ -457,8 +492,9 @@ export default function MeasurementsPage() {
 
   // Funciones para gestionar Dispositivos (CRUD)
   const handleAddDevice = async () => {
-    if (!newDevice.name) {
-      setErrorMessage('El nombre del dispositivo es obligatorio.');
+    // Validar campos requeridos en el frontend
+    if (!newDevice.name || !newDevice.serialNumber || !newDevice.tankId) {
+      setErrorMessage('Todos los campos son obligatorios.');
       return;
     }
 
@@ -468,14 +504,16 @@ export default function MeasurementsPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newDevice),
       });
+
       if (response.ok) {
         const createdDevice = await response.json();
         setDevices([...devices, createdDevice]);
-        setNewDevice({ id: 0, name: '' });
-        setIsManageDevicesOpen(false);
         setSuccessMessage('Dispositivo agregado exitosamente.');
+        setNewDevice({ id: 0, name: '', serialNumber: '', tankId: 0 });
+        setIsManageDevicesOpen(false);
       } else {
-        throw new Error('Error al agregar el dispositivo.');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Error al agregar el dispositivo.');
       }
     } catch (error: any) {
       console.error(error);
@@ -484,8 +522,9 @@ export default function MeasurementsPage() {
   };
 
   const handleEditDevice = async () => {
-    if (!editDevice || !editDevice.name) {
-      setErrorMessage('El nombre del dispositivo es obligatorio.');
+    // Validar campos requeridos en el frontend
+    if (!editDevice?.name || !editDevice.serialNumber || !editDevice.tankId) {
+      setErrorMessage('Todos los campos son obligatorios.');
       return;
     }
 
@@ -495,6 +534,7 @@ export default function MeasurementsPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(editDevice),
       });
+
       if (response.ok) {
         const updatedDevice = await response.json();
         setDevices(
@@ -502,11 +542,12 @@ export default function MeasurementsPage() {
             device.id === updatedDevice.id ? updatedDevice : device
           )
         );
+        setSuccessMessage('Dispositivo actualizado exitosamente.');
         setEditDevice(null);
         setIsManageDevicesOpen(false);
-        setSuccessMessage('Dispositivo actualizado exitosamente.');
       } else {
-        throw new Error('Error al actualizar el dispositivo.');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Error al actualizar el dispositivo.');
       }
     } catch (error: any) {
       console.error(error);
@@ -530,7 +571,8 @@ export default function MeasurementsPage() {
         setDevices(devices.filter((device) => device.id !== id));
         setSuccessMessage('Dispositivo eliminado exitosamente.');
       } else {
-        throw new Error('Error al eliminar el dispositivo.');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Error al eliminar el dispositivo.');
       }
     } catch (error: any) {
       console.error(error);
@@ -538,44 +580,8 @@ export default function MeasurementsPage() {
     }
   };
 
-  // Funciones para asignar y desasignar parámetros en el formulario
-  const assignParameter = (parameterId: number) => {
-    if (!formMeasurement.parameters.some((param) => param.parameterId === parameterId)) {
-      setFormMeasurement((prev) => ({
-        ...prev,
-        parameters: [...prev.parameters, { parameterId, value: 0 }],
-      }));
-    }
-  };
-
-  // Funciones para gestionar Dispositivos
-  const assignDevice = (deviceId: number) => {
-    setFormMeasurement((prev) => ({
-      ...prev,
-      deviceId,
-    }));
-  };
-
-  // Funciones para gestionar Sensores
-  const assignSensor = (sensorId: number) => {
-    setFormMeasurement((prev) => ({
-      ...prev,
-      sensorId,
-    }));
-  };
-
-  // Funciones para manejar el cierre de diálogos
-  const closeManageParameters = () => {
-    setIsManageParametersOpen(false);
-    setNewParameter({ id: 0, name: '', description: '' });
-    setEditParameter(null);
-  };
-
-  const closeManageDevices = () => {
-    setIsManageDevicesOpen(false);
-    setNewDevice({ id: 0, name: '' });
-    setEditDevice(null);
-  };
+  // Funciones para manejar Parámetros y Dispositivos
+  // (Ya incluidas arriba)
 
   // Funciones auxiliares para obtener colores según prioridad y estado
   const getPriorityColor = (priority: "HIGH" | "MEDIUM" | "LOW") => {
@@ -699,7 +705,7 @@ export default function MeasurementsPage() {
                   <SelectContent>
                     {devices.map((device) => (
                       <SelectItem key={device.id} value={device.id.toString()}>
-                        {device.name}
+                        {device.name} ({device.serialNumber})
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -937,7 +943,11 @@ export default function MeasurementsPage() {
             </div>
           </div>
           <div className="flex justify-end">
-            <Button onClick={closeManageParameters}>
+            <Button onClick={() => {
+              setIsManageParametersOpen(false);
+              setEditParameter(null);
+              setNewParameter({ id: 0, name: '', description: '' });
+            }}>
               Cerrar
             </Button>
           </div>
@@ -956,6 +966,8 @@ export default function MeasurementsPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Nombre</TableHead>
+                  <TableHead>Número de Serie</TableHead>
+                  <TableHead>Tanque</TableHead>
                   <TableHead>Acciones</TableHead>
                 </TableRow>
               </TableHeader>
@@ -963,6 +975,8 @@ export default function MeasurementsPage() {
                 {devices.map((device) => (
                   <TableRow key={device.id}>
                     <TableCell>{device.name}</TableCell>
+                    <TableCell>{device.serialNumber}</TableCell>
+                    <TableCell>{device.tank?.name || 'N/A'}</TableCell>
                     <TableCell>
                       <div className="flex space-x-2">
                         <Button
@@ -1005,6 +1019,50 @@ export default function MeasurementsPage() {
                     }
                   />
                 </div>
+                <div>
+                  <Label htmlFor="deviceSerialNumber">Número de Serie</Label>
+                  <Input
+                    id="deviceSerialNumber"
+                    type="text"
+                    value={editDevice ? editDevice.serialNumber : newDevice.serialNumber || ''}
+                    onChange={(e) =>
+                      editDevice
+                        ? setEditDevice({ ...editDevice, serialNumber: e.target.value })
+                        : setNewDevice({ ...newDevice, serialNumber: e.target.value })
+                    }
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="deviceTankId">Tanque</Label>
+                  <Select
+                    onValueChange={(value) =>
+                      editDevice
+                        ? setEditDevice({ ...editDevice, tankId: Number(value) })
+                        : setNewDevice({ ...newDevice, tankId: Number(value) })
+                    }
+                    value={
+                      editDevice
+                        ? editDevice.tankId.toString()
+                        : newDevice.tankId
+                        ? newDevice.tankId.toString()
+                        : ''
+                    }
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Selecciona un tanque" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {tanks.map((tank) => (
+                        <SelectItem key={tank.id} value={tank.id.toString()}>
+                          {tank.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {formErrors.tankId && (
+                    <span className="text-red-500 text-sm">{formErrors.tankId}</span>
+                  )}
+                </div>
                 <div className="flex space-x-2">
                   <Button
                     onClick={editDevice ? handleEditDevice : handleAddDevice}
@@ -1021,7 +1079,11 @@ export default function MeasurementsPage() {
             </div>
           </div>
           <div className="flex justify-end">
-            <Button onClick={closeManageDevices}>
+            <Button onClick={() => {
+              setIsManageDevicesOpen(false);
+              setEditDevice(null);
+              setNewDevice({ id: 0, name: '', serialNumber: '', tankId: 0 });
+            }}>
               Cerrar
             </Button>
           </div>
