@@ -13,17 +13,18 @@ datasource db {
 
 // Usuarios y roles
 model User {
-  id            Int         @id @default(autoincrement())
-  firstName     String      @db.VarChar(50)
-  lastName      String      @db.VarChar(50)
-  email         String      @unique @db.VarChar(100)
-  password      String
-  role          Role        @default(AJOLATORY_SUBSCRIBER)
-  phone         String      @db.VarChar(20)
-  ajolotaries   Ajolotary[]
+  id          Int         @id @default(autoincrement())
+  firstName   String      @db.VarChar(50)
+  lastName    String      @db.VarChar(50)
+  email       String      @unique @db.VarChar(100)
+  password    String
+  role        Role        @default(AJOLATORY_SUBSCRIBER)
+  phone       String      @db.VarChar(20)
+  ajolotaries Ajolotary[]
   // createdBy     Int?
   // creator       User?       @relation("UserCreator", fields: [createdBy], references: [id])
   // createdUsers  User[]      @relation("UserCreator")
+  Alert       Alert[]
 }
 
 enum Role {
@@ -34,24 +35,24 @@ enum Role {
 
 // Gestión de instalaciones
 model Ajolotary {
-  id           Int      @id @default(autoincrement())
-  name         String   @db.VarChar(100)
+  id           Int     @id @default(autoincrement())
+  name         String  @db.VarChar(100)
   location     String
-  description  String   @db.Text
-  permitNumber String   @db.VarChar(50)
-  active       Boolean  @default(true)
+  description  String  @db.Text
+  permitNumber String  @db.VarChar(50)
+  active       Boolean @default(true)
   users        User[]
   tanks        Tank[]
 }
 
 model Tank {
-  id           Int       @id @default(autoincrement())
-  name         String    @db.VarChar(50)
-  capacity     Decimal   @db.Decimal(10,2)
-  observations String    @db.Text
+  id           Int        @id @default(autoincrement())
+  name         String     @db.VarChar(50)
+  capacity     Decimal    @db.Decimal(10, 2)
+  observations String     @db.Text
   status       TankStatus @default(ACTIVE)
   ajolotaryId  Int
-  ajolotary    Ajolotary @relation(fields: [ajolotaryId], references: [id], onDelete: Cascade)
+  ajolotary    Ajolotary  @relation(fields: [ajolotaryId], references: [id], onDelete: Cascade)
   devices      Device[]
   axolotls     Axolotl[]
 }
@@ -82,18 +83,18 @@ enum DeviceStatus {
 }
 
 model Sensor {
-  id             Int          @id @default(autoincrement())
-  model          String       @db.VarChar(50)
-  serialNumber   String       @unique @db.VarChar(50)
-  lastConnection DateTime     @default(now())
-  magnitude      Magnitude    @relation(fields: [magnitudeId], references: [id])
-  magnitudeId    Int
-  type           SensorType
-  status         SensorStatus @default(ACTIVE)
-  deviceId       Int
-  device         Device       @relation(fields: [deviceId], references: [id], onDelete: Cascade)
-  measurements   Measurement[]
-  calibratedAt   DateTime     @default(now())
+  id                Int           @id @default(autoincrement())
+  model             String        @db.VarChar(50)
+  serialNumber      String        @unique @db.VarChar(50)
+  lastConnection    DateTime      @default(now())
+  magnitude         Magnitude     @relation(fields: [magnitudeId], references: [id])
+  magnitudeId       Int
+  type              SensorType
+  status            SensorStatus  @default(ACTIVE)
+  deviceId          Int
+  device            Device        @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  measurements      Measurement[]
+  calibratedAt      DateTime      @default(now())
   nextCalibrationAt DateTime
 }
 
@@ -114,58 +115,58 @@ enum SensorStatus {
 
 // Mediciones y parámetros
 model Measurement {
-  id         Int       @id @default(autoincrement())
-  dateTime   DateTime  @default(now())
+  id         Int                    @id @default(autoincrement())
+  dateTime   DateTime               @default(now())
   deviceId   Int
   sensorId   Int
-  device     Device    @relation(fields: [deviceId], references: [id], onDelete: Cascade)
-  sensor     Sensor    @relation(fields: [sensorId], references: [id], onDelete: Cascade)
+  device     Device                 @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  sensor     Sensor                 @relation(fields: [sensorId], references: [id], onDelete: Cascade)
   alerts     Alert[]
   parameters MeasurementParameter[]
-  isValid    Boolean   @default(true)
+  isValid    Boolean                @default(true)
 }
 
 model MeasurementParameter {
   id            Int         @id @default(autoincrement())
   measurementId Int
   parameterId   Int
-  value         Decimal     @db.Decimal(10,2)
+  value         Decimal     @db.Decimal(10, 2)
   measurement   Measurement @relation(fields: [measurementId], references: [id], onDelete: Cascade)
   parameter     Parameter   @relation(fields: [parameterId], references: [id])
 }
 
 // Gestión de magnitudes y parámetros
 model Magnitude {
-  id          Int       @id @default(autoincrement())
-  name        String    @unique @db.VarChar(50)
-  unit        String    @db.VarChar(20)
-  description String?   @db.Text
+  id          Int         @id @default(autoincrement())
+  name        String      @unique @db.VarChar(50)
+  unit        String      @db.VarChar(20)
+  description String?     @db.Text
   sensors     Sensor[]
   parameters  Parameter[]
 }
 
 model Parameter {
-  id               Int                   @id @default(autoincrement())
-  name             String                @db.VarChar(50)
+  id               Int                    @id @default(autoincrement())
+  name             String                 @db.VarChar(50)
   magnitudeId      Int
-  magnitude        Magnitude             @relation(fields: [magnitudeId], references: [id])
-  description      String?               @db.Text
+  magnitude        Magnitude              @relation(fields: [magnitudeId], references: [id])
+  description      String?                @db.Text
   measurementRules MeasurementRule[]
   measurements     MeasurementParameter[]
 }
 
 // Gestión de ajolotes
 model Axolotl {
-  id          Int          @id @default(autoincrement())
-  name        String       @db.VarChar(50)
-  species     String       @db.VarChar(50)
-  age         Int
-  health      HealthStatus
-  size        Decimal      @db.Decimal(10,2)
-  weight      Decimal      @db.Decimal(10,2)
-  stage       LifeStage
-  tankId      Int
-  tank        Tank         @relation(fields: [tankId], references: [id], onDelete: Cascade)
+  id           Int          @id @default(autoincrement())
+  name         String       @db.VarChar(50)
+  species      String       @db.VarChar(50)
+  age          Int
+  health       HealthStatus
+  size         Decimal      @db.Decimal(10, 2)
+  weight       Decimal      @db.Decimal(10, 2)
+  stage        LifeStage
+  tankId       Int
+  tank         Tank         @relation(fields: [tankId], references: [id], onDelete: Cascade)
   observations String[]
 }
 
@@ -194,9 +195,12 @@ model Alert {
   priority      Priority
   status        AlertStatus @default(PENDING)
   createdAt     DateTime    @default(now())
+  resolvedAt    DateTime?
+  resolvedBy    Int?
+  notes         String?
   measurement   Measurement @relation(fields: [measurementId], references: [id], onDelete: Cascade)
+  resolver      User?       @relation(fields: [resolvedBy], references: [id])
 }
-
 
 enum AlertType {
   PARAMETER_OUT_OF_RANGE
@@ -211,12 +215,10 @@ enum AlertStatus {
   PENDING
   ACKNOWLEDGED
   RESOLVED
-  DISMISSED
   ESCALATED
 }
 
 enum Priority {
-  CRITICAL
   HIGH
   MEDIUM
   LOW
@@ -225,12 +227,12 @@ enum Priority {
 // Reglas de medición
 model MeasurementRule {
   id          Int       @id @default(autoincrement())
-  optimalMin  Decimal   @db.Decimal(10,2)
-  optimalMax  Decimal   @db.Decimal(10,2)
-  warningMin  Decimal   @db.Decimal(10,2)
-  warningMax  Decimal   @db.Decimal(10,2)
-  criticalMin Decimal   @db.Decimal(10,2)
-  criticalMax Decimal   @db.Decimal(10,2)
+  optimalMin  Decimal   @db.Decimal(10, 2)
+  optimalMax  Decimal   @db.Decimal(10, 2)
+  warningMin  Decimal   @db.Decimal(10, 2)
+  warningMax  Decimal   @db.Decimal(10, 2)
+  criticalMin Decimal   @db.Decimal(10, 2)
+  criticalMax Decimal   @db.Decimal(10, 2)
   action      String    @db.Text
   parameterId Int
   parameter   Parameter @relation(fields: [parameterId], references: [id], onDelete: Cascade)
