@@ -26,8 +26,6 @@ export async function POST(request: Request) {
       description,
       priority,
       status,
-      resolvedAt,
-      resolvedBy,
       notes,
     } = data;
 
@@ -43,7 +41,6 @@ export async function POST(request: Request) {
         description,
         priority,
         status: status || 'PENDING',
-        resolvedAt: resolvedAt ? new Date(resolvedAt) : null,
         notes,
       },
     });
