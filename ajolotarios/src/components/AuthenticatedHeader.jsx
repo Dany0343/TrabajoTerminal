@@ -31,7 +31,7 @@ const AuthenticatedHeader = () => {
           </a>
           <nav className="flex items-center space-x-6 text-sm font-medium">
             <a className="transition-colors hover:text-foreground/80 text-foreground" href="/">Inicio</a>
-            <a className="transition-colors hover:text-foreground/80 text-foreground/60" href="/instalaciones">Instalaciones</a>
+            <Link className="transition-colors hover:text-foreground/80 text-foreground/60" href="/ajolotaries">Ajolotarios</Link>
             <Link className="transition-colors hover:text-foreground/80 text-foreground/60 font-semibold" href={"/tanks"}>
             Tanques
           </Link>
