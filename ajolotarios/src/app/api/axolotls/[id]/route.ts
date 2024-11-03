@@ -29,8 +29,8 @@ export async function PUT(request: Request, { params }: { params: { id: string }
       where: { id: Number(params.id) },
       data: {
         ...data,
-        size: data.size ? new Prisma.Decimal(data.size) : undefined,
-        weight: data.weight ? new Prisma.Decimal(data.weight) : undefined
+        size: data.size ? Number(data.size) : undefined,
+        weight: data.weight ? Number(data.weight) : undefined
       },
     });
     return NextResponse.json(updatedAxolotl);
