@@ -12,7 +12,6 @@ export async function GET() {
         sensor: {
           include: {
             type: true,
-            status: true,
           },
         },
         parameters: {
@@ -65,7 +64,6 @@ export async function POST(request: Request) {
         sensor: {
           include: {
             type: true,
-            status: true,
           },
         },
         parameters: {
