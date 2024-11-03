@@ -2,13 +2,7 @@
   "name": "ajolotarios",
   "version": "0.1.0",
   "private": true,
- "scripts": {
-  "dev": "next dev",
-  "build": "prisma generate && prisma migrate reset --force && prisma migrate deploy && next build",
-  "start": "next start",
-  "lint": "next lint",
-  "test": "jest"
-},
+ "scripts": { "dev": "next dev", "build": "prisma generate && prisma migrate deploy && next build", "start": "next start", "lint": "next lint", "test": "jest" },
   "dependencies": {
     "@prisma/client": "^5.6.0",
     "@radix-ui/react-avatar": "^1.1.0",
