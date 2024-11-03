@@ -2,6 +2,7 @@
 
 import { NextResponse } from 'next/server';
 import db from '@/lib/db';
+import { Prisma } from '@prisma/client';
 
 
 export async function GET(request: Request, { params }: { params: { id: string } }) {
@@ -26,7 +27,11 @@ export async function PUT(request: Request, { params }: { params: { id: string }
     const data = await request.json();
     const updatedAxolotl = await db.axolotl.update({
       where: { id: Number(params.id) },
-      data,
+      data: {
+        ...data,
+        size: data.size ? new Prisma.Decimal(data.size) : undefined,
+        weight: data.weight ? new Prisma.Decimal(data.weight) : undefined
+      },
     });
     return NextResponse.json(updatedAxolotl);
   } catch (error) {

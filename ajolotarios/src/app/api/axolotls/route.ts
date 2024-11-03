@@ -2,6 +2,7 @@
 
 import { NextResponse } from 'next/server';
 import db from '@/lib/db';
+import { Prisma } from '@prisma/client';
 
 
 export async function GET() {
@@ -34,8 +35,8 @@ export async function POST(request: Request) {
         species,
         age,
         health,
-        size,
-        weight,
+        size: new Prisma.Decimal(size),
+        weight: new Prisma.Decimal(weight),
         stage,
         tankId,
         observations,
