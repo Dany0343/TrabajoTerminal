@@ -21,9 +21,9 @@ model User {
   role          Role        @default(AJOLATORY_SUBSCRIBER)
   phone         String      @db.VarChar(20)
   ajolotaries   Ajolotary[]
-  createdBy     Int?
-  creator       User?       @relation("UserCreator", fields: [createdBy], references: [id])
-  createdUsers  User[]      @relation("UserCreator")
+  // createdBy     Int?
+  // creator       User?       @relation("UserCreator", fields: [createdBy], references: [id])
+  // createdUsers  User[]      @relation("UserCreator")
 }
 
 enum Role {
