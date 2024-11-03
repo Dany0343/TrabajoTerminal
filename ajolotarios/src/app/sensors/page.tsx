@@ -84,14 +84,6 @@ export default function SensorsPage() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
 
-  // Estado para gestionar SensorType
-  const [newSensorType, setNewSensorType] = useState<SensorType>({
-    id: 0,
-    name: '',
-  });
-  const [isSensorTypeDialogOpen, setIsSensorTypeDialogOpen] = useState(false);
-  const [editingSensorTypeId, setEditingSensorTypeId] = useState<number | null>(null);
-
   useEffect(() => {
     // Obtener sensores
     fetch('/api/sensors')
@@ -228,66 +220,6 @@ export default function SensorsPage() {
     }
   };
 
-  // Funciones para gestionar SensorType
-  const addSensorType = async () => {
-    if (!newSensorType.name) {
-      console.error('Nombre es requerido');
-      return;
-    }
-    const response = await fetch('/api/sensor-types', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: newSensorType.name }),
-    });
-    if (response.ok) {
-      const createdType = await response.json();
-      setSensorTypes([...sensorTypes, createdType]);
-      setNewSensorType({ id: 0, name: '' });
-    } else {
-      console.error('Error al crear el tipo de sensor');
-    }
-  };
-
-  const updateSensorType = async () => {
-    if (!newSensorType.name || editingSensorTypeId === null) {
-      console.error('Nombre es requerido');
-      return;
-    }
-    const response = await fetch(`/api/sensor-types/${editingSensorTypeId}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: newSensorType.name }),
-    });
-    if (response.ok) {
-      const updatedType = await response.json();
-      setSensorTypes(
-        sensorTypes.map((type) =>
-          type.id === editingSensorTypeId ? updatedType : type
-        )
-      );
-      setNewSensorType({ id: 0, name: '' });
-      setEditingSensorTypeId(null);
-    } else {
-      console.error('Error al actualizar el tipo de sensor');
-    }
-  };
-
-  const deleteSensorType = async (id: number) => {
-    const response = await fetch(`/api/sensor-types/${id}`, {
-      method: 'DELETE',
-    });
-    if (response.ok) {
-      setSensorTypes(sensorTypes.filter((type) => type.id !== id));
-    } else {
-      console.error('Error al eliminar el tipo de sensor');
-    }
-  };
-
-  const startEditingSensorType = (type: SensorType) => {
-    setNewSensorType(type);
-    setEditingSensorTypeId(type.id);
-  };
-
   return (
     <div className="container mx-auto py-10">
       <Card className="mb-8">
@@ -314,8 +246,123 @@ export default function SensorsPage() {
               <DialogTitle>Agregar Nuevo Sensor</DialogTitle>
             </DialogHeader>
             <div className="grid gap-4 py-4">
-              {/* Campos del formulario */}
-              {/* ... (Formulario de agregar sensor, igual que antes) */}
+              {/* Modelo */}
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="model" className="text-right">Modelo</Label>
+                <Input
+                  id="model"
+                  value={newSensor.model}
+                  onChange={(e) => setNewSensor({ ...newSensor, model: e.target.value })}
+                  className="col-span-3"
+                />
+              </div>
+              {/* Número de Serie */}
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="serialNumber" className="text-right">Número de Serie</Label>
+                <Input
+                  id="serialNumber"
+                  value={newSensor.serialNumber}
+                  onChange={(e) => setNewSensor({ ...newSensor, serialNumber: e.target.value })}
+                  className="col-span-3"
+                />
+              </div>
+              {/* Magnitud */}
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="magnitude" className="text-right">Magnitud</Label>
+                <Input
+                  id="magnitude"
+                  value={newSensor.magnitude}
+                  onChange={(e) => setNewSensor({ ...newSensor, magnitude: e.target.value })}
+                  className="col-span-3"
+                />
+              </div>
+              {/* Tipo de Sensor */}
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="typeId" className="text-right">Tipo de Sensor</Label>
+                <Select
+                  onValueChange={(value) => setNewSensor({ ...newSensor, typeId: Number(value) })}
+                  value={newSensor.typeId ? newSensor.typeId.toString() : ''}
+                >
+                  <SelectTrigger className="flex-1">
+                    <SelectValue placeholder="Selecciona un tipo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {sensorTypes.map((type) => (
+                      <SelectItem key={type.id} value={type.id.toString()}>
+                        {type.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              {/* Estado del Sensor */}
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="status" className="text-right">Estado del Sensor</Label>
+                <Select
+                  onValueChange={(value) => setNewSensor({ ...newSensor, status: value as SensorStatus })}
+                  value={newSensor.status || ''}
+                >
+                  <SelectTrigger className="col-span-3">
+                    <SelectValue placeholder="Selecciona un estado" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ACTIVE">Activo</SelectItem>
+                    <SelectItem value="INACTIVE">Inactivo</SelectItem>
+                    <SelectItem value="FAULTY">Defectuoso</SelectItem>
+                    <SelectItem value="CALIBRATING">Calibrando</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              {/* Dispositivo */}
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="deviceId" className="text-right">Dispositivo</Label>
+                <Select
+                  onValueChange={(value) => setNewSensor({ ...newSensor, deviceId: Number(value) })}
+                  value={newSensor.deviceId ? newSensor.deviceId.toString() : ''}
+                >
+                  <SelectTrigger className="col-span-3">
+                    <SelectValue placeholder="Selecciona un dispositivo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {devices.map((device) => (
+                      <SelectItem key={device.id} value={device.id.toString()}>
+                        {device.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              {/* Fechas */}
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="lastConnection" className="text-right">Última Conexión</Label>
+                <Input
+                  id="lastConnection"
+                  type="datetime-local"
+                  value={newSensor.lastConnection}
+                  onChange={(e) => setNewSensor({ ...newSensor, lastConnection: e.target.value })}
+                  className="col-span-3"
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="calibratedAt" className="text-right">Calibrado En</Label>
+                <Input
+                  id="calibratedAt"
+                  type="datetime-local"
+                  value={newSensor.calibratedAt}
+                  onChange={(e) => setNewSensor({ ...newSensor, calibratedAt: e.target.value })}
+                  className="col-span-3"
+                />
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor="nextCalibrationAt" className="text-right">Próxima Calibración</Label>
+                <Input
+                  id="nextCalibrationAt"
+                  type="datetime-local"
+                  value={newSensor.nextCalibrationAt}
+                  onChange={(e) => setNewSensor({ ...newSensor, nextCalibrationAt: e.target.value })}
+                  className="col-span-3"
+                />
+              </div>
             </div>
             <Button onClick={addSensor}>Agregar Sensor</Button>
           </DialogContent>
@@ -382,111 +429,60 @@ export default function SensorsPage() {
                         <DialogTitle>Editar Sensor</DialogTitle>
                       </DialogHeader>
                       <div className="grid gap-4 py-4">
-                        {/* Campos del formulario */}
+                        {/* Modelo */}
                         <div className="grid grid-cols-4 items-center gap-4">
-                          <Label htmlFor="model" className="text-right">
-                            Modelo
-                          </Label>
+                          <Label htmlFor="model" className="text-right">Modelo</Label>
                           <Input
                             id="model"
                             value={newSensor.model}
-                            onChange={(e) =>
-                              setNewSensor({ ...newSensor, model: e.target.value })
-                            }
+                            onChange={(e) => setNewSensor({ ...newSensor, model: e.target.value })}
                             className="col-span-3"
                           />
                         </div>
+                        {/* Número de Serie */}
                         <div className="grid grid-cols-4 items-center gap-4">
-                          <Label htmlFor="serialNumber" className="text-right">
-                            Número de Serie
-                          </Label>
+                          <Label htmlFor="serialNumber" className="text-right">Número de Serie</Label>
                           <Input
                             id="serialNumber"
                             value={newSensor.serialNumber}
-                            onChange={(e) =>
-                              setNewSensor({ ...newSensor, serialNumber: e.target.value })
-                            }
+                            onChange={(e) => setNewSensor({ ...newSensor, serialNumber: e.target.value })}
                             className="col-span-3"
                           />
                         </div>
+                        {/* Magnitud */}
                         <div className="grid grid-cols-4 items-center gap-4">
-                          <Label htmlFor="magnitude" className="text-right">
-                            Magnitud
-                          </Label>
+                          <Label htmlFor="magnitude" className="text-right">Magnitud</Label>
                           <Input
                             id="magnitude"
                             value={newSensor.magnitude}
-                            onChange={(e) =>
-                              setNewSensor({ ...newSensor, magnitude: e.target.value })
-                            }
+                            onChange={(e) => setNewSensor({ ...newSensor, magnitude: e.target.value })}
                             className="col-span-3"
                           />
                         </div>
-                        {/* Selección de Tipo de Sensor */}
+                        {/* Tipo de Sensor */}
                         <div className="grid grid-cols-4 items-center gap-4">
-                          <Label htmlFor="typeId" className="text-right">
-                            Tipo de Sensor
-                          </Label>
-                          <div className="col-span-3 flex items-center">
-                            <Select
-                              onValueChange={(value) =>
-                                setNewSensor({ ...newSensor, typeId: Number(value) })
-                              }
-                              value={newSensor.typeId ? newSensor.typeId.toString() : ''}
-                            >
-                              <SelectTrigger className="flex-1">
-                                <SelectValue placeholder="Selecciona un tipo" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {sensorTypes.map((type) => (
-                                  <SelectItem key={type.id} value={type.id.toString()}>
-                                    {type.name}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                            {/* Botón para gestionar tipos de sensor */}
-                            <Dialog
-                              open={isSensorTypeDialogOpen}
-                              onOpenChange={(open) => {
-                                setIsSensorTypeDialogOpen(open);
-                                if (!open) {
-                                  setNewSensorType({ id: 0, name: '' });
-                                  setEditingSensorTypeId(null);
-                                }
-                              }}
-                            >
-                              <DialogTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="ml-2"
-                                  onClick={() => setIsSensorTypeDialogOpen(true)}
-                                >
-                                  <Plus className="h-4 w-4" />
-                                </Button>
-                              </DialogTrigger>
-                              <DialogContent>
-                                <DialogHeader>
-                                  <DialogTitle>Gestionar Tipos de Sensor</DialogTitle>
-                                </DialogHeader>
-                                <div className="grid gap-4 py-4">
-                                  {/* Lista de tipos de sensor */}
-                                  {/* ... (igual que en agregar sensor) */}
-                                </div>
-                              </DialogContent>
-                            </Dialog>
-                          </div>
-                        </div>
-                        {/* Selección del Estado del Sensor */}
-                        <div className="grid grid-cols-4 items-center gap-4">
-                          <Label htmlFor="status" className="text-right">
-                            Estado del Sensor
-                          </Label>
+                          <Label htmlFor="typeId" className="text-right">Tipo de Sensor</Label>
                           <Select
-                            onValueChange={(value) =>
-                              setNewSensor({ ...newSensor, status: value as SensorStatus })
-                            }
+                            onValueChange={(value) => setNewSensor({ ...newSensor, typeId: Number(value) })}
+                            value={newSensor.typeId ? newSensor.typeId.toString() : ''}
+                          >
+                            <SelectTrigger className="flex-1">
+                              <SelectValue placeholder="Selecciona un tipo" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {sensorTypes.map((type) => (
+                                <SelectItem key={type.id} value={type.id.toString()}>
+                                  {type.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        {/* Estado del Sensor */}
+                        <div className="grid grid-cols-4 items-center gap-4">
+                          <Label htmlFor="status" className="text-right">Estado del Sensor</Label>
+                          <Select
+                            onValueChange={(value) => setNewSensor({ ...newSensor, status: value as SensorStatus })}
                             value={newSensor.status || ''}
                           >
                             <SelectTrigger className="col-span-3">
@@ -500,15 +496,11 @@ export default function SensorsPage() {
                             </SelectContent>
                           </Select>
                         </div>
-                        {/* Selección del Dispositivo */}
+                        {/* Dispositivo */}
                         <div className="grid grid-cols-4 items-center gap-4">
-                          <Label htmlFor="deviceId" className="text-right">
-                            Dispositivo
-                          </Label>
+                          <Label htmlFor="deviceId" className="text-right">Dispositivo</Label>
                           <Select
-                            onValueChange={(value) =>
-                              setNewSensor({ ...newSensor, deviceId: Number(value) })
-                            }
+                            onValueChange={(value) => setNewSensor({ ...newSensor, deviceId: Number(value) })}
                             value={newSensor.deviceId ? newSensor.deviceId.toString() : ''}
                           >
                             <SelectTrigger className="col-span-3">
@@ -523,49 +515,34 @@ export default function SensorsPage() {
                             </SelectContent>
                           </Select>
                         </div>
-                        {/* Campos de Fecha */}
+                        {/* Fechas */}
                         <div className="grid grid-cols-4 items-center gap-4">
-                          <Label htmlFor="lastConnection" className="text-right">
-                            Última Conexión
-                          </Label>
+                          <Label htmlFor="lastConnection" className="text-right">Última Conexión</Label>
                           <Input
                             id="lastConnection"
                             type="datetime-local"
                             value={newSensor.lastConnection}
-                            onChange={(e) =>
-                              setNewSensor({ ...newSensor, lastConnection: e.target.value })
-                            }
+                            onChange={(e) => setNewSensor({ ...newSensor, lastConnection: e.target.value })}
                             className="col-span-3"
                           />
                         </div>
                         <div className="grid grid-cols-4 items-center gap-4">
-                          <Label htmlFor="calibratedAt" className="text-right">
-                            Calibrado En
-                          </Label>
+                          <Label htmlFor="calibratedAt" className="text-right">Calibrado En</Label>
                           <Input
                             id="calibratedAt"
                             type="datetime-local"
                             value={newSensor.calibratedAt}
-                            onChange={(e) =>
-                              setNewSensor({ ...newSensor, calibratedAt: e.target.value })
-                            }
+                            onChange={(e) => setNewSensor({ ...newSensor, calibratedAt: e.target.value })}
                             className="col-span-3"
                           />
                         </div>
                         <div className="grid grid-cols-4 items-center gap-4">
-                          <Label htmlFor="nextCalibrationAt" className="text-right">
-                            Próxima Calibración
-                          </Label>
+                          <Label htmlFor="nextCalibrationAt" className="text-right">Próxima Calibración</Label>
                           <Input
                             id="nextCalibrationAt"
                             type="datetime-local"
                             value={newSensor.nextCalibrationAt}
-                            onChange={(e) =>
-                              setNewSensor({
-                                ...newSensor,
-                                nextCalibrationAt: e.target.value,
-                              })
-                            }
+                            onChange={(e) => setNewSensor({ ...newSensor, nextCalibrationAt: e.target.value })}
                             className="col-span-3"
                           />
                         </div>
@@ -573,7 +550,8 @@ export default function SensorsPage() {
                       <Button onClick={updateSensor}>Actualizar Sensor</Button>
                     </DialogContent>
                   </Dialog>
-
+                  
+                  {/* Botón para eliminar sensor */}
                   <Button
                     variant="destructive"
                     size="sm"
