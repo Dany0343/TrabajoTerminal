@@ -29,7 +29,7 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 
-// Definir tipos separados para los parámetros del formulario
+// Tipos para el formulario
 type FormMeasurementParameter = {
   id?: number; // Opcional para permitir la creación de nuevos parámetros
   parameterId: number;
@@ -44,7 +44,7 @@ type FormMeasurement = {
   parameters: FormMeasurementParameter[];
 };
 
-// Otros tipos según tu esquema Prisma
+// Tipos según tu esquema Prisma
 type Measurement = {
   id: number;
   dateTime: string;
@@ -94,6 +94,7 @@ type SensorStatus = {
 type Parameter = {
   id: number;
   name: string;
+  description?: string;
 };
 
 type Alert = {
@@ -123,12 +124,20 @@ type User = {
   lastName: string;
 };
 
+// Tipos para Dispositivos en el formulario
+type FormDevice = {
+  id?: number;
+  name: string;
+};
+
+// Componente Principal
 export default function MeasurementsPage() {
   const [measurements, setMeasurements] = useState<Measurement[]>([]);
   const [devices, setDevices] = useState<Device[]>([]);
   const [sensors, setSensors] = useState<Sensor[]>([]);
   const [parameters, setParameters] = useState<Parameter[]>([]);
-  
+
+  // Estado para el formulario de mediciones
   const [formMeasurement, setFormMeasurement] = useState<FormMeasurement>({
     dateTime: new Date().toISOString().slice(0, 16),
     deviceId: undefined,
@@ -136,41 +145,64 @@ export default function MeasurementsPage() {
     isValid: true,
     parameters: [],
   });
-  
+
+  // Estados para editar
   const [isEditing, setIsEditing] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  
+
+  // Estados para mensajes
   const [formErrors, setFormErrors] = useState<{ [key: string]: string }>({});
   const [successMessage, setSuccessMessage] = useState<string>('');
   const [errorMessage, setErrorMessage] = useState<string>('');
-  
+
+  // Estados para gestionar Parámetros y Dispositivos
+  const [isManageParametersOpen, setIsManageParametersOpen] = useState(false);
+  const [isManageDevicesOpen, setIsManageDevicesOpen] = useState(false);
+
+  const [newParameter, setNewParameter] = useState<Parameter>({
+    id: 0,
+    name: '',
+    description: '',
+  });
+
+  const [editParameter, setEditParameter] = useState<Parameter | null>(null);
+
+  const [newDevice, setNewDevice] = useState<FormDevice>({
+    id: 0,
+    name: '',
+  });
+
+  const [editDevice, setEditDevice] = useState<Device | null>(null);
+
+  // Efecto para obtener datos al montar el componente
   useEffect(() => {
     // Obtener mediciones
     fetch('/api/measurements')
       .then((res) => res.json())
       .then((data) => setMeasurements(data))
       .catch((error) => console.error(error));
-    
+
     // Obtener dispositivos
     fetch('/api/devices')
       .then((res) => res.json())
       .then((data) => setDevices(data))
       .catch((error) => console.error(error));
-    
+
     // Obtener sensores
     fetch('/api/sensors')
       .then((res) => res.json())
       .then((data) => setSensors(data))
       .catch((error) => console.error(error));
-    
+
     // Obtener parámetros
     fetch('/api/parameters')
       .then((res) => res.json())
       .then((data) => setParameters(data))
       .catch((error) => console.error(error));
   }, []);
-  
+
+  // Validación del formulario
   const validateForm = () => {
     const errors: { [key: string]: string } = {};
     if (!formMeasurement.dateTime) {
@@ -197,12 +229,13 @@ export default function MeasurementsPage() {
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
   };
-  
+
+  // Función para agregar o actualizar una medición
   const addOrUpdateMeasurement = async () => {
     if (!validateForm()) {
       return;
     }
-    
+
     try {
       let response;
       if (isEditing && editingId !== null) {
@@ -238,7 +271,7 @@ export default function MeasurementsPage() {
           throw new Error('Error al crear la medición.');
         }
       }
-      
+
       // Cerrar diálogo y restablecer formulario
       setIsEditing(false);
       setEditingId(null);
@@ -256,7 +289,8 @@ export default function MeasurementsPage() {
       setErrorMessage(error.message || 'Ocurrió un error inesperado.');
     }
   };
-  
+
+  // Función para abrir el diálogo de agregar medición
   const openAddDialog = () => {
     setIsEditing(false);
     setFormMeasurement({
@@ -269,7 +303,8 @@ export default function MeasurementsPage() {
     setFormErrors({});
     setIsDialogOpen(true);
   };
-  
+
+  // Función para abrir el diálogo de editar medición
   const openEditDialog = (measurement: Measurement) => {
     setIsEditing(true);
     setEditingId(measurement.id);
@@ -287,7 +322,8 @@ export default function MeasurementsPage() {
     setFormErrors({});
     setIsDialogOpen(true);
   };
-  
+
+  // Función para eliminar una medición con confirmación
   const deleteMeasurement = async (id: number) => {
     const confirmDelete = window.confirm(
       '¿Estás seguro de que deseas eliminar esta medición? Esta acción no se puede deshacer.'
@@ -295,7 +331,7 @@ export default function MeasurementsPage() {
     if (!confirmDelete) {
       return;
     }
-    
+
     try {
       const response = await fetch(`/api/measurements/${id}`, {
         method: 'DELETE',
@@ -311,7 +347,8 @@ export default function MeasurementsPage() {
       setErrorMessage(error.message || 'Ocurrió un error inesperado.');
     }
   };
-  
+
+  // Funciones para manejar Parámetros en el formulario
   const addParameterField = () => {
     setFormMeasurement((prev) => ({
       ...prev,
@@ -321,7 +358,7 @@ export default function MeasurementsPage() {
       ],
     }));
   };
-  
+
   const removeParameterField = (index: number) => {
     setFormMeasurement((prev) => ({
       ...prev,
@@ -334,7 +371,213 @@ export default function MeasurementsPage() {
       return newErrors;
     });
   };
-  
+
+  // Funciones para gestionar Parámetros (CRUD)
+  const handleAddParameter = async () => {
+    if (!newParameter.name) {
+      setErrorMessage('El nombre del parámetro es obligatorio.');
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/parameters', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newParameter),
+      });
+      if (response.ok) {
+        const createdParameter = await response.json();
+        setParameters([...parameters, createdParameter]);
+        setNewParameter({ id: 0, name: '', description: '' });
+        setIsManageParametersOpen(false);
+        setSuccessMessage('Parámetro agregado exitosamente.');
+      } else {
+        throw new Error('Error al agregar el parámetro.');
+      }
+    } catch (error: any) {
+      console.error(error);
+      setErrorMessage(error.message || 'Ocurrió un error inesperado.');
+    }
+  };
+
+  const handleEditParameter = async () => {
+    if (!editParameter || !editParameter.name) {
+      setErrorMessage('El nombre del parámetro es obligatorio.');
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/parameters/${editParameter.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(editParameter),
+      });
+      if (response.ok) {
+        const updatedParameter = await response.json();
+        setParameters(
+          parameters.map((param) =>
+            param.id === updatedParameter.id ? updatedParameter : param
+          )
+        );
+        setEditParameter(null);
+        setIsManageParametersOpen(false);
+        setSuccessMessage('Parámetro actualizado exitosamente.');
+      } else {
+        throw new Error('Error al actualizar el parámetro.');
+      }
+    } catch (error: any) {
+      console.error(error);
+      setErrorMessage(error.message || 'Ocurrió un error inesperado.');
+    }
+  };
+
+  const handleDeleteParameter = async (id: number) => {
+    const confirmDelete = window.confirm(
+      '¿Estás seguro de que deseas eliminar este parámetro? Esta acción no se puede deshacer.'
+    );
+    if (!confirmDelete) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/parameters/${id}`, {
+        method: 'DELETE',
+      });
+      if (response.ok) {
+        setParameters(parameters.filter((param) => param.id !== id));
+        setSuccessMessage('Parámetro eliminado exitosamente.');
+      } else {
+        throw new Error('Error al eliminar el parámetro.');
+      }
+    } catch (error: any) {
+      console.error(error);
+      setErrorMessage(error.message || 'Ocurrió un error inesperado.');
+    }
+  };
+
+  // Funciones para gestionar Dispositivos (CRUD)
+  const handleAddDevice = async () => {
+    if (!newDevice.name) {
+      setErrorMessage('El nombre del dispositivo es obligatorio.');
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/devices', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newDevice),
+      });
+      if (response.ok) {
+        const createdDevice = await response.json();
+        setDevices([...devices, createdDevice]);
+        setNewDevice({ id: 0, name: '' });
+        setIsManageDevicesOpen(false);
+        setSuccessMessage('Dispositivo agregado exitosamente.');
+      } else {
+        throw new Error('Error al agregar el dispositivo.');
+      }
+    } catch (error: any) {
+      console.error(error);
+      setErrorMessage(error.message || 'Ocurrió un error inesperado.');
+    }
+  };
+
+  const handleEditDevice = async () => {
+    if (!editDevice || !editDevice.name) {
+      setErrorMessage('El nombre del dispositivo es obligatorio.');
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/devices/${editDevice.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(editDevice),
+      });
+      if (response.ok) {
+        const updatedDevice = await response.json();
+        setDevices(
+          devices.map((device) =>
+            device.id === updatedDevice.id ? updatedDevice : device
+          )
+        );
+        setEditDevice(null);
+        setIsManageDevicesOpen(false);
+        setSuccessMessage('Dispositivo actualizado exitosamente.');
+      } else {
+        throw new Error('Error al actualizar el dispositivo.');
+      }
+    } catch (error: any) {
+      console.error(error);
+      setErrorMessage(error.message || 'Ocurrió un error inesperado.');
+    }
+  };
+
+  const handleDeleteDevice = async (id: number) => {
+    const confirmDelete = window.confirm(
+      '¿Estás seguro de que deseas eliminar este dispositivo? Esta acción no se puede deshacer.'
+    );
+    if (!confirmDelete) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/devices/${id}`, {
+        method: 'DELETE',
+      });
+      if (response.ok) {
+        setDevices(devices.filter((device) => device.id !== id));
+        setSuccessMessage('Dispositivo eliminado exitosamente.');
+      } else {
+        throw new Error('Error al eliminar el dispositivo.');
+      }
+    } catch (error: any) {
+      console.error(error);
+      setErrorMessage(error.message || 'Ocurrió un error inesperado.');
+    }
+  };
+
+  // Funciones para asignar y desasignar parámetros en el formulario
+  const assignParameter = (parameterId: number) => {
+    if (!formMeasurement.parameters.some((param) => param.parameterId === parameterId)) {
+      setFormMeasurement((prev) => ({
+        ...prev,
+        parameters: [...prev.parameters, { parameterId, value: 0 }],
+      }));
+    }
+  };
+
+  // Funciones para gestionar Dispositivos
+  const assignDevice = (deviceId: number) => {
+    setFormMeasurement((prev) => ({
+      ...prev,
+      deviceId,
+    }));
+  };
+
+  // Funciones para gestionar Sensores
+  const assignSensor = (sensorId: number) => {
+    setFormMeasurement((prev) => ({
+      ...prev,
+      sensorId,
+    }));
+  };
+
+  // Funciones para manejar el cierre de diálogos
+  const closeManageParameters = () => {
+    setIsManageParametersOpen(false);
+    setNewParameter({ id: 0, name: '', description: '' });
+    setEditParameter(null);
+  };
+
+  const closeManageDevices = () => {
+    setIsManageDevicesOpen(false);
+    setNewDevice({ id: 0, name: '' });
+    setEditDevice(null);
+  };
+
+  // Funciones auxiliares para obtener colores según prioridad y estado
   const getPriorityColor = (priority: "HIGH" | "MEDIUM" | "LOW") => {
     switch (priority) {
       case "LOW":
@@ -347,7 +590,7 @@ export default function MeasurementsPage() {
         return "bg-gray-500";
     }
   };
-  
+
   const getStatusColor = (status: "PENDING" | "ACKNOWLEDGED" | "RESOLVED" | "ESCALATED") => {
     switch (status) {
       case "PENDING":
@@ -362,7 +605,7 @@ export default function MeasurementsPage() {
         return "bg-gray-500";
     }
   };
-  
+
   return (
     <div className="container mx-auto py-10">
       {/* Mensajes de éxito y error */}
@@ -382,7 +625,8 @@ export default function MeasurementsPage() {
           </button>
         </div>
       )}
-      
+
+      {/* Card de Título */}
       <Card className="mb-8">
         <CardHeader>
           <CardTitle className="text-3xl font-bold">Gestión de Mediciones</CardTitle>
@@ -392,15 +636,24 @@ export default function MeasurementsPage() {
           {/* Aquí podrías agregar un resumen o estadísticas de las mediciones */}
         </CardContent>
       </Card>
-      
+
+      {/* Sección de Lista de Mediciones */}
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-2xl font-semibold">Lista de Mediciones</h2>
-        <Button onClick={openAddDialog}>
-          <Plus className="mr-2 h-4 w-4" /> Agregar Medición
-        </Button>
+        <div className="flex space-x-2">
+          <Button onClick={openAddDialog}>
+            <Plus className="mr-2 h-4 w-4" /> Agregar Medición
+          </Button>
+          <Button variant="secondary" onClick={() => setIsManageParametersOpen(true)}>
+            Gestionar Parámetros
+          </Button>
+          <Button variant="secondary" onClick={() => setIsManageDevicesOpen(true)}>
+            Gestionar Dispositivos
+          </Button>
+        </div>
       </div>
-      
-      {/* Diálogo para Agregar/Editar */}
+
+      {/* Diálogo para Agregar/Editar Mediciones */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="max-w-3xl">
           <DialogHeader>
@@ -420,16 +673,14 @@ export default function MeasurementsPage() {
                   onChange={(e) =>
                     setFormMeasurement({ ...formMeasurement, dateTime: e.target.value })
                   }
-                  className={`w-full ${
-                    formErrors.dateTime ? 'border-red-500' : ''
-                  }`}
+                  className={`w-full ${formErrors.dateTime ? 'border-red-500' : ''}`}
                 />
                 {formErrors.dateTime && (
                   <span className="text-red-500 text-sm">{formErrors.dateTime}</span>
                 )}
               </div>
             </div>
-            
+
             {/* Dispositivo */}
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="deviceId" className="text-right">
@@ -440,11 +691,7 @@ export default function MeasurementsPage() {
                   onValueChange={(value) =>
                     setFormMeasurement({ ...formMeasurement, deviceId: Number(value) })
                   }
-                  value={
-                    formMeasurement.deviceId
-                      ? formMeasurement.deviceId.toString()
-                      : ''
-                  }
+                  value={formMeasurement.deviceId ? formMeasurement.deviceId.toString() : ''}
                 >
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Selecciona un dispositivo" />
@@ -462,7 +709,7 @@ export default function MeasurementsPage() {
                 )}
               </div>
             </div>
-            
+
             {/* Sensor */}
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="sensorId" className="text-right">
@@ -473,11 +720,7 @@ export default function MeasurementsPage() {
                   onValueChange={(value) =>
                     setFormMeasurement({ ...formMeasurement, sensorId: Number(value) })
                   }
-                  value={
-                    formMeasurement.sensorId
-                      ? formMeasurement.sensorId.toString()
-                      : ''
-                  }
+                  value={formMeasurement.sensorId ? formMeasurement.sensorId.toString() : ''}
                 >
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Selecciona un sensor" />
@@ -495,7 +738,7 @@ export default function MeasurementsPage() {
                 )}
               </div>
             </div>
-            
+
             {/* Parámetros */}
             <div className="grid grid-cols-4 items-start gap-4">
               <Label className="text-right">Parámetros</Label>
@@ -510,11 +753,7 @@ export default function MeasurementsPage() {
                           updatedParams[index].parameterId = Number(value);
                           setFormMeasurement({ ...formMeasurement, parameters: updatedParams });
                         }}
-                        value={
-                          param.parameterId
-                            ? param.parameterId.toString()
-                            : ''
-                        }
+                        value={param.parameterId ? param.parameterId.toString() : ''}
                       >
                         <SelectTrigger className="w-full">
                           <SelectValue placeholder="Selecciona un parámetro" />
@@ -533,7 +772,7 @@ export default function MeasurementsPage() {
                           {formErrors[`parameterId_${index}`]}
                         </span>
                       )}
-                      
+
                       {/* Input de Valor */}
                       <Input
                         type="number"
@@ -545,9 +784,7 @@ export default function MeasurementsPage() {
                           updatedParams[index].value = value;
                           setFormMeasurement({ ...formMeasurement, parameters: updatedParams });
                         }}
-                        className={`w-24 ${
-                          formErrors[`value_${index}`] ? 'border-red-500' : ''
-                        }`}
+                        className={`w-24 ${formErrors[`value_${index}`] ? 'border-red-500' : ''}`}
                       />
                       {/* Error de Valor */}
                       {formErrors[`value_${index}`] && (
@@ -555,7 +792,7 @@ export default function MeasurementsPage() {
                           {formErrors[`value_${index}`]}
                         </span>
                       )}
-                      
+
                       {/* Botón para eliminar parámetro */}
                       <Button
                         variant="destructive"
@@ -577,7 +814,7 @@ export default function MeasurementsPage() {
                 </Button>
               </div>
             </div>
-            
+
             {/* Campo isValid */}
             <div className="grid grid-cols-4 items-center gap-4">
               <Label htmlFor="isValid" className="text-right">
@@ -608,7 +845,190 @@ export default function MeasurementsPage() {
           </div>
         </DialogContent>
       </Dialog>
-      
+
+      {/* Diálogo para Gestionar Parámetros */}
+      <Dialog open={isManageParametersOpen} onOpenChange={setIsManageParametersOpen}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>Gestionar Parámetros</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            {/* Lista de Parámetros Existentes */}
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Nombre</TableHead>
+                  <TableHead>Descripción</TableHead>
+                  <TableHead>Acciones</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {parameters.map((parameter) => (
+                  <TableRow key={parameter.id}>
+                    <TableCell>{parameter.name}</TableCell>
+                    <TableCell>{parameter.description || 'N/A'}</TableCell>
+                    <TableCell>
+                      <div className="flex space-x-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setEditParameter(parameter)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => handleDeleteParameter(parameter.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+
+            {/* Formulario para Agregar/Editar Parámetros */}
+            <div className="mt-4">
+              <h3 className="text-xl font-semibold">
+                {editParameter ? 'Editar Parámetro' : 'Agregar Nuevo Parámetro'}
+              </h3>
+              <div className="grid grid-cols-1 gap-4 mt-2">
+                <div>
+                  <Label htmlFor="parameterName">Nombre</Label>
+                  <Input
+                    id="parameterName"
+                    type="text"
+                    value={editParameter ? editParameter.name : newParameter.name}
+                    onChange={(e) =>
+                      editParameter
+                        ? setEditParameter({ ...editParameter, name: e.target.value })
+                        : setNewParameter({ ...newParameter, name: e.target.value })
+                    }
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="parameterDescription">Descripción</Label>
+                  <Textarea
+                    id="parameterDescription"
+                    value={editParameter ? editParameter.description || '' : newParameter.description || ''}
+                    onChange={(e) =>
+                      editParameter
+                        ? setEditParameter({ ...editParameter, description: e.target.value })
+                        : setNewParameter({ ...newParameter, description: e.target.value })
+                    }
+                  />
+                </div>
+                <div className="flex space-x-2">
+                  <Button
+                    onClick={editParameter ? handleEditParameter : handleAddParameter}
+                  >
+                    {editParameter ? 'Actualizar Parámetro' : 'Agregar Parámetro'}
+                  </Button>
+                  {editParameter && (
+                    <Button variant="ghost" onClick={() => setEditParameter(null)}>
+                      Cancelar
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="flex justify-end">
+            <Button onClick={closeManageParameters}>
+              Cerrar
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Diálogo para Gestionar Dispositivos */}
+      <Dialog open={isManageDevicesOpen} onOpenChange={setIsManageDevicesOpen}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>Gestionar Dispositivos</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            {/* Lista de Dispositivos Existentes */}
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Nombre</TableHead>
+                  <TableHead>Acciones</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {devices.map((device) => (
+                  <TableRow key={device.id}>
+                    <TableCell>{device.name}</TableCell>
+                    <TableCell>
+                      <div className="flex space-x-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setEditDevice(device)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => handleDeleteDevice(device.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+
+            {/* Formulario para Agregar/Editar Dispositivos */}
+            <div className="mt-4">
+              <h3 className="text-xl font-semibold">
+                {editDevice ? 'Editar Dispositivo' : 'Agregar Nuevo Dispositivo'}
+              </h3>
+              <div className="grid grid-cols-1 gap-4 mt-2">
+                <div>
+                  <Label htmlFor="deviceName">Nombre</Label>
+                  <Input
+                    id="deviceName"
+                    type="text"
+                    value={editDevice ? editDevice.name : newDevice.name}
+                    onChange={(e) =>
+                      editDevice
+                        ? setEditDevice({ ...editDevice, name: e.target.value })
+                        : setNewDevice({ ...newDevice, name: e.target.value })
+                    }
+                  />
+                </div>
+                <div className="flex space-x-2">
+                  <Button
+                    onClick={editDevice ? handleEditDevice : handleAddDevice}
+                  >
+                    {editDevice ? 'Actualizar Dispositivo' : 'Agregar Dispositivo'}
+                  </Button>
+                  {editDevice && (
+                    <Button variant="ghost" onClick={() => setEditDevice(null)}>
+                      Cancelar
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="flex justify-end">
+            <Button onClick={closeManageDevices}>
+              Cerrar
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Tabla de Mediciones */}
       <Table>
         <TableHeader>
           <TableRow>
@@ -650,7 +1070,7 @@ export default function MeasurementsPage() {
                   >
                     <Edit className="h-4 w-4" />
                   </Button>
-                  
+
                   {/* Botón para eliminar medición */}
                   <Button
                     variant="destructive"

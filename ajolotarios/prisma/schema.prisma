@@ -89,7 +89,6 @@ model Sensor {
   statusId          Int
   deviceId          Int
   calibratedAt      DateTime        @default(now())
-  nextCalibrationAt DateTime
   device            Device          @relation(fields: [deviceId], references: [id], onDelete: Cascade)
   type              SensorType      @relation(fields: [typeId], references: [id])
   status            SensorStatus    @relation(fields: [statusId], references: [id])
