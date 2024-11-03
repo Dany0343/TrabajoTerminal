@@ -14,7 +14,7 @@ const UnauthenticatedNavbar = () => {
           className="rounded-lg"
         />
         <p className="text-xl font-semibold align-middle ml-2">
-          Ajolotarios Web App
+          AjoloApp
         </p>
       </Link>
 

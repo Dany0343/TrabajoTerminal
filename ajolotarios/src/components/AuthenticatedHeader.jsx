@@ -27,7 +27,7 @@ const AuthenticatedHeader = () => {
             height={30}
             alt="Double point"
             />
-            <span className="hidden font-bold sm:inline-block">Sistema de Monitoreo de Ajolotes</span>
+            <span className="hidden font-bold sm:inline-block">AjoloApp</span>
           </a>
           <nav className="flex items-center space-x-6 text-sm font-medium">
             <a className="transition-colors hover:text-foreground/80 text-foreground" href="/">Inicio</a>

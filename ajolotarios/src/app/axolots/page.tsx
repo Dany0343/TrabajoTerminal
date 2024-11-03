@@ -50,7 +50,7 @@ export default function AxolotlsPage() {
 
   useEffect(() => {
     // Obtener ajolotes
-    fetch('/api/axolotls')
+    fetch('/api/axolots')
       .then((res) => res.json())
       .then((data) => setAxolotls(data))
       .catch((error) => console.error(error))
