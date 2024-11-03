@@ -64,56 +64,58 @@ enum TankStatus {
   QUARANTINE
 }
 
-// Dispositivos y sensores
+// Modelo de Tipo de Sensor
+model SensorType {
+  id       Int       @id @default(autoincrement())
+  name     String    @unique
+  sensors  Sensor[]
+}
+
+// Modelo de Estado de Sensor
+model SensorStatus {
+  id       Int       @id @default(autoincrement())
+  status   String    @unique
+  sensors  Sensor[]
+}
+
+// Modelo de Sensor
+model Sensor {
+  id                Int             @id @default(autoincrement())
+  model             String          @db.VarChar(50)
+  serialNumber      String          @unique @db.VarChar(50)
+  lastConnection    DateTime        @default(now())
+  magnitude         String          @db.VarChar(50)
+  typeId            Int
+  statusId          Int
+  deviceId          Int
+  calibratedAt      DateTime        @default(now())
+  nextCalibrationAt DateTime
+  device            Device          @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  type              SensorType      @relation(fields: [typeId], references: [id])
+  status            SensorStatus    @relation(fields: [statusId], references: [id])
+  measurements      Measurement[]
+}
+
+// Modelo de Dispositivo
 model Device {
-  id           Int           @id @default(autoincrement())
-  name         String        @db.VarChar(50)
-  serialNumber String        @unique @db.VarChar(50)
-  status       DeviceStatus  @default(ACTIVE)
+  id           Int             @id @default(autoincrement())
+  name         String          @db.VarChar(50)
+  serialNumber String          @unique @db.VarChar(50)
+  status       DeviceStatus    @default(ACTIVE)
   tankId       Int
-  tank         Tank          @relation(fields: [tankId], references: [id], onDelete: Cascade)
+  tank         Tank            @relation(fields: [tankId], references: [id], onDelete: Cascade)
   sensors      Sensor[]
   measurements Measurement[]
 }
 
+// Enums
 enum DeviceStatus {
   ACTIVE
   INACTIVE
   MAINTENANCE
 }
 
-model Sensor {
-  id                Int           @id @default(autoincrement())
-  model             String        @db.VarChar(50)
-  serialNumber      String        @unique @db.VarChar(50)
-  lastConnection    DateTime      @default(now())
-  magnitude         Magnitude     @relation(fields: [magnitudeId], references: [id])
-  magnitudeId       Int
-  type              SensorType
-  status            SensorStatus  @default(ACTIVE)
-  deviceId          Int
-  device            Device        @relation(fields: [deviceId], references: [id], onDelete: Cascade)
-  measurements      Measurement[]
-  calibratedAt      DateTime      @default(now())
-  nextCalibrationAt DateTime
-}
-
-enum SensorType {
-  TEMPERATURE
-  PH
-  OXYGEN
-  CONDUCTIVITY
-  AMMONIA
-}
-
-enum SensorStatus {
-  ACTIVE
-  INACTIVE
-  FAULTY
-  CALIBRATING
-}
-
-// Mediciones y parámetros
+// Modelo de Medición
 model Measurement {
   id         Int                    @id @default(autoincrement())
   dateTime   DateTime               @default(now())
@@ -126,6 +128,7 @@ model Measurement {
   isValid    Boolean                @default(true)
 }
 
+// Modelo de Parámetros de Medición
 model MeasurementParameter {
   id            Int         @id @default(autoincrement())
   measurementId Int
@@ -135,25 +138,15 @@ model MeasurementParameter {
   parameter     Parameter   @relation(fields: [parameterId], references: [id])
 }
 
-// Gestión de magnitudes y parámetros
-model Magnitude {
-  id          Int         @id @default(autoincrement())
-  name        String      @unique @db.VarChar(50)
-  unit        String      @db.VarChar(20)
-  description String?     @db.Text
-  sensors     Sensor[]
-  parameters  Parameter[]
-}
-
+// Modelo de Parámetro
 model Parameter {
   id               Int                    @id @default(autoincrement())
   name             String                 @db.VarChar(50)
-  magnitudeId      Int
-  magnitude        Magnitude              @relation(fields: [magnitudeId], references: [id])
   description      String?                @db.Text
   measurementRules MeasurementRule[]
   measurements     MeasurementParameter[]
 }
+
 
 // Gestión de ajolotes
 model Axolotl {

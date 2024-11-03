@@ -17,7 +17,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import {
@@ -73,7 +72,7 @@ export default function AlertsPage() {
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [measurements, setMeasurements] = useState<Measurement[]>([]);
   const [users, setUsers] = useState<User[]>([]);
-  const [newAlert, setNewAlert] = useState<
+  const [formAlert, setFormAlert] = useState<
     Omit<Alert, "id" | "createdAt" | "measurement" | "resolver">
   >({
     measurementId: 0,
@@ -82,10 +81,13 @@ export default function AlertsPage() {
     priority: "MEDIUM",
     status: "PENDING",
     resolvedAt: "",
+    resolvedBy: undefined,
     notes: "",
   });
   const [isEditing, setIsEditing] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [formErrors, setFormErrors] = useState<{ [key: string]: string }>({});
 
   useEffect(() => {
     // Obtener alertas
@@ -107,7 +109,29 @@ export default function AlertsPage() {
       .catch((error) => console.error(error));
   }, []);
 
+  const validateForm = () => {
+    const errors: { [key: string]: string } = {};
+    if (!formAlert.description.trim()) {
+      errors.description = "La descripción es obligatoria.";
+    }
+    if (formAlert.measurementId === 0) {
+      errors.measurementId = "Selecciona una medición.";
+    }
+    if (!formAlert.resolvedAt && formAlert.status === "RESOLVED") {
+      errors.resolvedAt = "Selecciona una fecha de resolución.";
+    }
+    if (formAlert.status === "RESOLVED" && !formAlert.resolvedBy) {
+      errors.resolvedBy = "Selecciona quién resolvió la alerta.";
+    }
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const addOrUpdateAlert = async () => {
+    if (!validateForm()) {
+      return;
+    }
+
     if (isEditing && editingId !== null) {
       // Actualizar alerta
       const response = await fetch(`/api/alerts/${editingId}`, {
@@ -115,7 +139,7 @@ export default function AlertsPage() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(newAlert),
+        body: JSON.stringify(formAlert),
       });
       if (response.ok) {
         const updatedAlert = await response.json();
@@ -124,6 +148,7 @@ export default function AlertsPage() {
         );
         setIsEditing(false);
         setEditingId(null);
+        setIsDialogOpen(false);
       } else {
         console.error("Error al actualizar la alerta");
       }
@@ -134,17 +159,18 @@ export default function AlertsPage() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(newAlert),
+        body: JSON.stringify(formAlert),
       });
       if (response.ok) {
         const createdAlert = await response.json();
         setAlerts([...alerts, createdAlert]);
+        setIsDialogOpen(false);
       } else {
         console.error("Error al crear la alerta");
       }
     }
     // Restablecer formulario
-    setNewAlert({
+    setFormAlert({
       measurementId: 0,
       alertType: "PARAMETER_OUT_OF_RANGE",
       description: "",
@@ -154,10 +180,29 @@ export default function AlertsPage() {
       resolvedBy: undefined,
       notes: "",
     });
+    setFormErrors({});
   };
 
-  const startEditing = (alert: Alert) => {
-    setNewAlert({
+  const openAddDialog = () => {
+    setIsEditing(false);
+    setFormAlert({
+      measurementId: 0,
+      alertType: "PARAMETER_OUT_OF_RANGE",
+      description: "",
+      priority: "MEDIUM",
+      status: "PENDING",
+      resolvedAt: "",
+      resolvedBy: undefined,
+      notes: "",
+    });
+    setFormErrors({});
+    setIsDialogOpen(true);
+  };
+
+  const openEditDialog = (alert: Alert) => {
+    setIsEditing(true);
+    setEditingId(alert.id);
+    setFormAlert({
       measurementId: alert.measurementId,
       alertType: alert.alertType,
       description: alert.description,
@@ -167,11 +212,19 @@ export default function AlertsPage() {
       resolvedBy: alert.resolvedBy,
       notes: alert.notes || "",
     });
-    setIsEditing(true);
-    setEditingId(alert.id);
+    setFormErrors({});
+    setIsDialogOpen(true);
   };
 
   const deleteAlert = async (id: number) => {
+    if (
+      !confirm(
+        "¿Estás seguro de que deseas eliminar esta alerta? Esta acción no se puede deshacer."
+      )
+    ) {
+      return;
+    }
+
     const response = await fetch(`/api/alerts/${id}`, {
       method: "DELETE",
     });
@@ -190,6 +243,8 @@ export default function AlertsPage() {
         return "bg-yellow-500";
       case "HIGH":
         return "bg-orange-500";
+      default:
+        return "bg-gray-500";
     }
   };
 
@@ -203,6 +258,8 @@ export default function AlertsPage() {
         return "bg-green-500";
       case "ESCALATED":
         return "bg-red-500";
+      default:
+        return "bg-gray-500";
     }
   };
 
@@ -210,16 +267,12 @@ export default function AlertsPage() {
     <div className="container mx-auto py-10">
       <Card className="mb-8">
         <CardHeader>
-          <CardTitle className="text-3xl font-bold">
-            Gestión de Alertas
-          </CardTitle>
-          <CardDescription>
-            Monitorea y administra las alertas del sistema
-          </CardDescription>
+          <CardTitle className="text-3xl font-bold">Gestión de Alertas</CardTitle>
+          <CardDescription>Monitorea y administra las alertas del sistema</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            {["CRITICAL", "HIGH", "MEDIUM", "LOW"].map((priority) => (
+            {["HIGH", "MEDIUM", "LOW"].map((priority) => (
               <Card key={priority}>
                 <CardHeader>
                   <CardTitle className="flex items-center">
@@ -253,133 +306,141 @@ export default function AlertsPage() {
 
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-2xl font-semibold">Lista de Alertas</h2>
-        <Dialog>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />{" "}
-              {isEditing ? "Editar Alerta" : "Agregar Alerta"}
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>
-                {isEditing ? "Editar Alerta" : "Agregar Nueva Alerta"}
-              </DialogTitle>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-4 items-start gap-4">
-                <Label htmlFor="description" className="text-right">
-                  Descripción
-                </Label>
+        <Button onClick={openAddDialog}>
+          <Plus className="mr-2 h-4 w-4" /> Agregar Alerta
+        </Button>
+      </div>
+
+      {/* Diálogo para Agregar/Editar */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {isEditing ? "Editar Alerta" : "Agregar Nueva Alerta"}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-start gap-4">
+              <Label htmlFor="description" className="text-right">
+                Descripción
+              </Label>
+              <div className="col-span-3">
                 <Textarea
                   id="description"
-                  value={newAlert.description}
+                  value={formAlert.description}
                   onChange={(e) =>
-                    setNewAlert({ ...newAlert, description: e.target.value })
+                    setFormAlert({ ...formAlert, description: e.target.value })
                   }
-                  className="col-span-3"
+                  className={`w-full ${
+                    formErrors.description ? "border-red-500" : ""
+                  }`}
                 />
+                {formErrors.description && (
+                  <span className="text-red-500 text-sm">
+                    {formErrors.description}
+                  </span>
+                )}
               </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="alertType" className="text-right">
-                  Tipo de Alerta
-                </Label>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="alertType" className="text-right">
+                Tipo de Alerta
+              </Label>
+              <Select
+                onValueChange={(value) =>
+                  setFormAlert({
+                    ...formAlert,
+                    alertType: value as Alert["alertType"],
+                  })
+                }
+                value={formAlert.alertType}
+              >
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder="Selecciona el tipo de alerta" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="PARAMETER_OUT_OF_RANGE">
+                    Parámetro fuera de rango
+                  </SelectItem>
+                  <SelectItem value="DEVICE_MALFUNCTION">
+                    Fallo de dispositivo
+                  </SelectItem>
+                  <SelectItem value="MAINTENANCE_REQUIRED">
+                    Requiere mantenimiento
+                  </SelectItem>
+                  <SelectItem value="SYSTEM_ERROR">Error de sistema</SelectItem>
+                  <SelectItem value="CALIBRATION_NEEDED">
+                    Necesita calibración
+                  </SelectItem>
+                  <SelectItem value="HEALTH_ISSUE">
+                    Problema de salud
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="priority" className="text-right">
+                Prioridad
+              </Label>
+              <Select
+                onValueChange={(value) =>
+                  setFormAlert({
+                    ...formAlert,
+                    priority: value as Alert["priority"],
+                  })
+                }
+                value={formAlert.priority}
+              >
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder="Selecciona la prioridad" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="LOW">Baja</SelectItem>
+                  <SelectItem value="MEDIUM">Media</SelectItem>
+                  <SelectItem value="HIGH">Alta</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="status" className="text-right">
+                Estado
+              </Label>
+              <Select
+                onValueChange={(value) =>
+                  setFormAlert({
+                    ...formAlert,
+                    status: value as Alert["status"],
+                  })
+                }
+                value={formAlert.status}
+              >
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder="Selecciona el estado" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="PENDING">Pendiente</SelectItem>
+                  <SelectItem value="ACKNOWLEDGED">Reconocida</SelectItem>
+                  <SelectItem value="RESOLVED">Resuelta</SelectItem>
+                  <SelectItem value="ESCALATED">Escalada</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="measurementId" className="text-right">
+                Medición
+              </Label>
+              <div className="col-span-3">
                 <Select
                   onValueChange={(value) =>
-                    setNewAlert({
-                      ...newAlert,
-                      alertType: value as Alert["alertType"],
-                    })
-                  }
-                  value={newAlert.alertType}
-                >
-                  <SelectTrigger className="col-span-3">
-                    <SelectValue placeholder="Selecciona el tipo de alerta" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="PARAMETER_OUT_OF_RANGE">
-                      Parámetro fuera de rango
-                    </SelectItem>
-                    <SelectItem value="DEVICE_MALFUNCTION">
-                      Fallo de dispositivo
-                    </SelectItem>
-                    <SelectItem value="MAINTENANCE_REQUIRED">
-                      Requiere mantenimiento
-                    </SelectItem>
-                    <SelectItem value="SYSTEM_ERROR">
-                      Error de sistema
-                    </SelectItem>
-                    <SelectItem value="CALIBRATION_NEEDED">
-                      Necesita calibración
-                    </SelectItem>
-                    <SelectItem value="HEALTH_ISSUE">
-                      Problema de salud
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="priority" className="text-right">
-                  Prioridad
-                </Label>
-                <Select
-                  onValueChange={(value) =>
-                    setNewAlert({
-                      ...newAlert,
-                      priority: value as Alert["priority"],
-                    })
-                  }
-                  value={newAlert.priority}
-                >
-                  <SelectTrigger className="col-span-3">
-                    <SelectValue placeholder="Selecciona la prioridad" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="LOW">Baja</SelectItem>
-                    <SelectItem value="MEDIUM">Media</SelectItem>
-                    <SelectItem value="HIGH">Alta</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="status" className="text-right">
-                  Estado
-                </Label>
-                <Select
-                  onValueChange={(value) =>
-                    setNewAlert({
-                      ...newAlert,
-                      status: value as Alert["status"],
-                    })
-                  }
-                  value={newAlert.status}
-                >
-                  <SelectTrigger className="col-span-3">
-                    <SelectValue placeholder="Selecciona el estado" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="PENDING">Pendiente</SelectItem>
-                    <SelectItem value="ACKNOWLEDGED">Reconocida</SelectItem>
-                    <SelectItem value="RESOLVED">Resuelta</SelectItem>
-                    <SelectItem value="ESCALATED">Escalada</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="measurementId" className="text-right">
-                  Medición
-                </Label>
-                <Select
-                  onValueChange={(value) =>
-                    setNewAlert({ ...newAlert, measurementId: Number(value) })
+                    setFormAlert({ ...formAlert, measurementId: Number(value) })
                   }
                   value={
-                    newAlert.measurementId
-                      ? newAlert.measurementId.toString()
+                    formAlert.measurementId
+                      ? formAlert.measurementId.toString()
                       : ""
                   }
                 >
-                  <SelectTrigger className="col-span-3">
+                  <SelectTrigger className="w-full">
                     <SelectValue placeholder="Selecciona una medición" />
                   </SelectTrigger>
                   <SelectContent>
@@ -393,66 +454,104 @@ export default function AlertsPage() {
                     ))}
                   </SelectContent>
                 </Select>
+                {formErrors.measurementId && (
+                  <span className="text-red-500 text-sm">
+                    {formErrors.measurementId}
+                  </span>
+                )}
               </div>
-              {/* Campos opcionales */}
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="resolvedAt" className="text-right">
-                  Fecha de Resolución
-                </Label>
-                <Input
-                  id="resolvedAt"
-                  type="date"
-                  value={newAlert.resolvedAt}
-                  onChange={(e) =>
-                    setNewAlert({ ...newAlert, resolvedAt: e.target.value })
-                  }
-                  className="col-span-3"
-                />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="resolvedBy" className="text-right">
-                  Resuelta por
-                </Label>
-                <Select
-                  onValueChange={(value) =>
-                    setNewAlert({ ...newAlert, resolvedBy: Number(value) })
-                  }
-                  value={
-                    newAlert.resolvedBy ? newAlert.resolvedBy.toString() : ""
-                  }
-                >
-                  <SelectTrigger className="col-span-3">
-                    <SelectValue placeholder="Selecciona un usuario" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {users.map((user) => (
-                      <SelectItem key={user.id} value={user.id.toString()}>
-                        {user.firstName} {user.lastName}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="grid grid-cols-4 items-start gap-4">
-                <Label htmlFor="notes" className="text-right">
-                  Notas
-                </Label>
+            </div>
+            {/* Campos opcionales */}
+            {formAlert.status === "RESOLVED" && (
+              <>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="resolvedAt" className="text-right">
+                    Fecha de Resolución
+                  </Label>
+                  <div className="col-span-3">
+                    <Input
+                      id="resolvedAt"
+                      type="date"
+                      value={formAlert.resolvedAt}
+                      onChange={(e) =>
+                        setFormAlert({
+                          ...formAlert,
+                          resolvedAt: e.target.value,
+                        })
+                      }
+                      className={`w-full ${
+                        formErrors.resolvedAt ? "border-red-500" : ""
+                      }`}
+                    />
+                    {formErrors.resolvedAt && (
+                      <span className="text-red-500 text-sm">
+                        {formErrors.resolvedAt}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="resolvedBy" className="text-right">
+                    Resuelta por
+                  </Label>
+                  <div className="col-span-3">
+                    <Select
+                      onValueChange={(value) =>
+                        setFormAlert({
+                          ...formAlert,
+                          resolvedBy: Number(value),
+                        })
+                      }
+                      value={
+                        formAlert.resolvedBy
+                          ? formAlert.resolvedBy.toString()
+                          : ""
+                      }
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Selecciona un usuario" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {users.map((user) => (
+                          <SelectItem
+                            key={user.id}
+                            value={user.id.toString()}
+                          >
+                            {user.firstName} {user.lastName}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {formErrors.resolvedBy && (
+                      <span className="text-red-500 text-sm">
+                        {formErrors.resolvedBy}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </>
+            )}
+            <div className="grid grid-cols-4 items-start gap-4">
+              <Label htmlFor="notes" className="text-right">
+                Notas
+              </Label>
+              <div className="col-span-3">
                 <Textarea
                   id="notes"
-                  value={newAlert.notes}
+                  value={formAlert.notes}
                   onChange={(e) =>
-                    setNewAlert({ ...newAlert, notes: e.target.value })
+                    setFormAlert({ ...formAlert, notes: e.target.value })
                   }
-                  className="col-span-3"
+                  className="w-full"
                 />
               </div>
             </div>
-            <Button onClick={addOrUpdateAlert}>
-              {isEditing ? "Actualizar Alerta" : "Agregar Alerta"}
-            </Button>
-          </DialogContent>
-        </Dialog>
-      </div>
+          </div>
+          <Button onClick={addOrUpdateAlert} className="mt-4">
+            {isEditing ? "Actualizar Alerta" : "Agregar Alerta"}
+          </Button>
+        </DialogContent>
+      </Dialog>
 
       <Table>
         <TableHeader>
@@ -470,23 +569,31 @@ export default function AlertsPage() {
               <TableCell className="font-medium">{alert.description}</TableCell>
               <TableCell>
                 <Badge
-                  className={`${getPriorityColor(alert.priority)} text-white`}
+                  className={`${getPriorityColor(
+                    alert.priority
+                  )} text-white`}
                 >
                   {alert.priority}
                 </Badge>
               </TableCell>
               <TableCell>
-                <Badge className={`${getStatusColor(alert.status)} text-white`}>
+                <Badge
+                  className={`${getStatusColor(alert.status)} text-white`}
+                >
                   {alert.status}
                 </Badge>
               </TableCell>
-              <TableCell>{alert.measurementId}</TableCell>
+              <TableCell>
+                {alert.measurement
+                  ? `Medición ${alert.measurement.id}`
+                  : "N/A"}
+              </TableCell>
               <TableCell>
                 <div className="flex space-x-2">
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => startEditing(alert)}
+                    onClick={() => openEditDialog(alert)}
                   >
                     <Edit className="h-4 w-4" />
                   </Button>

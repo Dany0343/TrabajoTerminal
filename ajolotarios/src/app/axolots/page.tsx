@@ -5,7 +5,7 @@ import { Plus, Edit, Trash2, Heart } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -34,7 +34,7 @@ type Tank = {
 export default function AxolotlsPage() {
   const [axolotls, setAxolotls] = useState<Axolotl[]>([])
   const [tanks, setTanks] = useState<Tank[]>([])
-  const [newAxolotl, setNewAxolotl] = useState<Omit<Axolotl, 'id' | 'tank'>>({
+  const [formAxolotl, setFormAxolotl] = useState<Omit<Axolotl, 'id' | 'tank'>>({
     name: '',
     species: '',
     age: 0,
@@ -47,6 +47,7 @@ export default function AxolotlsPage() {
   })
   const [isEditing, setIsEditing] = useState(false)
   const [editingId, setEditingId] = useState<number | null>(null)
+  const [isDialogOpen, setIsDialogOpen] = useState(false)
 
   useEffect(() => {
     // Obtener ajolotes
@@ -70,7 +71,7 @@ export default function AxolotlsPage() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(newAxolotl),
+        body: JSON.stringify(formAxolotl),
       })
       if (response.ok) {
         const updatedAxolotl = await response.json()
@@ -87,7 +88,7 @@ export default function AxolotlsPage() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(newAxolotl),
+        body: JSON.stringify(formAxolotl),
       })
       if (response.ok) {
         const createdAxolotl = await response.json()
@@ -96,8 +97,8 @@ export default function AxolotlsPage() {
         console.error('Error al crear el ajolote')
       }
     }
-    // Restablecer formulario
-    setNewAxolotl({
+    // Restablecer formulario y cerrar diálogo
+    setFormAxolotl({
       name: '',
       species: '',
       age: 0,
@@ -108,10 +109,31 @@ export default function AxolotlsPage() {
       tankId: 0,
       observations: [],
     })
+    setIsDialogOpen(false)
+    setIsEditing(false)
+    setEditingId(null)
   }
 
-  const startEditing = (axolotl: Axolotl) => {
-    setNewAxolotl({
+  const openAddDialog = () => {
+    setIsEditing(false)
+    setFormAxolotl({
+      name: '',
+      species: '',
+      age: 0,
+      health: 'HEALTHY',
+      size: 0,
+      weight: 0,
+      stage: 'JUVENILE',
+      tankId: 0,
+      observations: [],
+    })
+    setIsDialogOpen(true)
+  }
+
+  const openEditDialog = (axolotl: Axolotl) => {
+    setIsEditing(true)
+    setEditingId(axolotl.id)
+    setFormAxolotl({
       name: axolotl.name,
       species: axolotl.species,
       age: axolotl.age,
@@ -122,8 +144,7 @@ export default function AxolotlsPage() {
       tankId: axolotl.tankId,
       observations: axolotl.observations,
     })
-    setIsEditing(true)
-    setEditingId(axolotl.id)
+    setIsDialogOpen(true)
   }
 
   const deleteAxolotl = async (id: number) => {
@@ -198,133 +219,135 @@ export default function AxolotlsPage() {
       
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-2xl font-semibold">Lista de Ajolotes</h2>
-        <Dialog>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" /> {isEditing ? 'Editar Ajolote' : 'Agregar Ajolote'}
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>{isEditing ? 'Editar Ajolote' : 'Agregar Nuevo Ajolote'}</DialogTitle>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="name" className="text-right">Nombre</Label>
-                <Input
-                  id="name"
-                  value={newAxolotl.name}
-                  onChange={(e) => setNewAxolotl({...newAxolotl, name: e.target.value})}
-                  className="col-span-3"
-                />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="species" className="text-right">Especie</Label>
-                <Input
-                  id="species"
-                  value={newAxolotl.species}
-                  onChange={(e) => setNewAxolotl({...newAxolotl, species: e.target.value})}
-                  className="col-span-3"
-                />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="age" className="text-right">Edad</Label>
-                <Input
-                  id="age"
-                  type="number"
-                  value={newAxolotl.age}
-                  onChange={(e) => setNewAxolotl({...newAxolotl, age: Number(e.target.value)})}
-                  className="col-span-3"
-                />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="health" className="text-right">Salud</Label>
-                <Select
-                  onValueChange={(value) => setNewAxolotl({...newAxolotl, health: value as Axolotl['health']})}
-                  value={newAxolotl.health}
-                >
-                  <SelectTrigger className="col-span-3">
-                    <SelectValue placeholder="Selecciona el estado de salud" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="HEALTHY">Saludable</SelectItem>
-                    <SelectItem value="RECOVERING">Recuperándose</SelectItem>
-                    <SelectItem value="SICK">Enfermo</SelectItem>
-                    <SelectItem value="CRITICAL">Crítico</SelectItem>
-                    <SelectItem value="QUARANTINE">En cuarentena</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="size" className="text-right">Tamaño (cm)</Label>
-                <Input
-                  id="size"
-                  type="number"
-                  value={newAxolotl.size}
-                  onChange={(e) => setNewAxolotl({...newAxolotl, size: Number(e.target.value)})}
-                  className="col-span-3"
-                />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="weight" className="text-right">Peso (g)</Label>
-                <Input
-                  id="weight"
-                  type="number"
-                  value={newAxolotl.weight}
-                  onChange={(e) => setNewAxolotl({...newAxolotl, weight: Number(e.target.value)})}
-                  className="col-span-3"
-                />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="stage" className="text-right">Etapa de Vida</Label>
-                <Select
-                  onValueChange={(value) => setNewAxolotl({...newAxolotl, stage: value as Axolotl['stage']})}
-                  value={newAxolotl.stage}
-                >
-                  <SelectTrigger className="col-span-3">
-                    <SelectValue placeholder="Selecciona la etapa de vida" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="EGG">Huevo</SelectItem>
-                    <SelectItem value="LARVAE">Larva</SelectItem>
-                    <SelectItem value="JUVENILE">Juvenil</SelectItem>
-                    <SelectItem value="ADULT">Adulto</SelectItem>
-                    <SelectItem value="BREEDING">Reproductivo</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="tank" className="text-right">Tanque</Label>
-                <Select
-                  onValueChange={(value) => setNewAxolotl({...newAxolotl, tankId: Number(value)})}
-                  value={newAxolotl.tankId.toString()}
-                >
-                  <SelectTrigger className="col-span-3">
-                    <SelectValue placeholder="Selecciona un tanque" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {tanks.map((tank) => (
-                      <SelectItem key={tank.id} value={tank.id.toString()}>
-                        {tank.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="grid grid-cols-4 items-start gap-4">
-                <Label htmlFor="observations" className="text-right">Observaciones</Label>
-                <Textarea
-                  id="observations"
-                  value={newAxolotl.observations.join('\n')}
-                  onChange={(e) => setNewAxolotl({...newAxolotl, observations: e.target.value.split('\n')})}
-                  className="col-span-3"
-                />
-              </div>
-            </div>
-            <Button onClick={addOrUpdateAxolotl}>{isEditing ? 'Actualizar Ajolote' : 'Agregar Ajolote'}</Button>
-          </DialogContent>
-        </Dialog>
+        <Button onClick={openAddDialog}>
+          <Plus className="mr-2 h-4 w-4" /> Agregar Ajolote
+        </Button>
       </div>
+
+      {/* Diálogo para Agregar/Editar */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{isEditing ? 'Editar Ajolote' : 'Agregar Nuevo Ajolote'}</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="name" className="text-right">Nombre</Label>
+              <Input
+                id="name"
+                value={formAxolotl.name}
+                onChange={(e) => setFormAxolotl({...formAxolotl, name: e.target.value})}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="species" className="text-right">Especie</Label>
+              <Input
+                id="species"
+                value={formAxolotl.species}
+                onChange={(e) => setFormAxolotl({...formAxolotl, species: e.target.value})}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="age" className="text-right">Edad</Label>
+              <Input
+                id="age"
+                type="number"
+                value={formAxolotl.age}
+                onChange={(e) => setFormAxolotl({...formAxolotl, age: Number(e.target.value)})}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="health" className="text-right">Salud</Label>
+              <Select
+                onValueChange={(value) => setFormAxolotl({...formAxolotl, health: value as Axolotl['health']})}
+                value={formAxolotl.health}
+              >
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder="Selecciona el estado de salud" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="HEALTHY">Saludable</SelectItem>
+                  <SelectItem value="RECOVERING">Recuperándose</SelectItem>
+                  <SelectItem value="SICK">Enfermo</SelectItem>
+                  <SelectItem value="CRITICAL">Crítico</SelectItem>
+                  <SelectItem value="QUARANTINE">En cuarentena</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="size" className="text-right">Tamaño (cm)</Label>
+              <Input
+                id="size"
+                type="number"
+                value={formAxolotl.size}
+                onChange={(e) => setFormAxolotl({...formAxolotl, size: Number(e.target.value)})}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="weight" className="text-right">Peso (g)</Label>
+              <Input
+                id="weight"
+                type="number"
+                value={formAxolotl.weight}
+                onChange={(e) => setFormAxolotl({...formAxolotl, weight: Number(e.target.value)})}
+                className="col-span-3"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="stage" className="text-right">Etapa de Vida</Label>
+              <Select
+                onValueChange={(value) => setFormAxolotl({...formAxolotl, stage: value as Axolotl['stage']})}
+                value={formAxolotl.stage}
+              >
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder="Selecciona la etapa de vida" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="EGG">Huevo</SelectItem>
+                  <SelectItem value="LARVAE">Larva</SelectItem>
+                  <SelectItem value="JUVENILE">Juvenil</SelectItem>
+                  <SelectItem value="ADULT">Adulto</SelectItem>
+                  <SelectItem value="BREEDING">Reproductivo</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="tank" className="text-right">Tanque</Label>
+              <Select
+                onValueChange={(value) => setFormAxolotl({...formAxolotl, tankId: Number(value)})}
+                value={formAxolotl.tankId.toString()}
+              >
+                <SelectTrigger className="col-span-3">
+                  <SelectValue placeholder="Selecciona un tanque" />
+                </SelectTrigger>
+                <SelectContent>
+                  {tanks.map((tank) => (
+                    <SelectItem key={tank.id} value={tank.id.toString()}>
+                      {tank.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-4 items-start gap-4">
+              <Label htmlFor="observations" className="text-right">Observaciones</Label>
+              <Textarea
+                id="observations"
+                value={formAxolotl.observations.join('\n')}
+                onChange={(e) => setFormAxolotl({...formAxolotl, observations: e.target.value.split('\n')})}
+                className="col-span-3"
+              />
+            </div>
+          </div>
+          <Button onClick={addOrUpdateAxolotl} className="mt-4">
+            {isEditing ? 'Actualizar Ajolote' : 'Agregar Ajolote'}
+          </Button>
+        </DialogContent>
+      </Dialog>
 
       <Table>
         <TableHeader>
@@ -354,7 +377,7 @@ export default function AxolotlsPage() {
               <TableCell>{axolotl.stage}</TableCell>
               <TableCell>
                 <div className="flex space-x-2">
-                  <Button variant="outline" size="sm" onClick={() => startEditing(axolotl)}>
+                  <Button variant="outline" size="sm" onClick={() => openEditDialog(axolotl)}>
                     <Edit className="h-4 w-4" />
                   </Button>
                   <Button variant="destructive" size="sm" onClick={() => deleteAxolotl(axolotl.id)}>

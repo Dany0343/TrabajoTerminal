@@ -38,8 +38,11 @@ const AuthenticatedHeader = () => {
             <Link className="transition-colors hover:text-foreground/80 text-foreground/60 font-semibold" href={"/axolots"}>
             Ajolotes
           </Link>
-            <Link className="transition-colors hover:text-foreground/80 text-foreground/60 font-semibold" href={"/alerts"}>
+          <Link className="transition-colors hover:text-foreground/80 text-foreground/60 font-semibold" href={"/alerts"}>
             Alertas
+          </Link>
+          <Link className="transition-colors hover:text-foreground/80 text-foreground/60 font-semibold" href={"/measurements"}>
+            Medidas
           </Link>
           </nav>
         </div>
