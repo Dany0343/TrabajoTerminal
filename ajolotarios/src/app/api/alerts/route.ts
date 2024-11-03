@@ -26,7 +26,6 @@ export async function POST(request: Request) {
       description,
       priority,
       status,
-      notes,
     } = data;
 
     // Validación de campos requeridos
@@ -41,7 +40,6 @@ export async function POST(request: Request) {
         description,
         priority,
         status: status || 'PENDING',
-        notes,
       },
     });
 

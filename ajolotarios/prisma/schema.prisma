@@ -195,7 +195,6 @@ model Alert {
   status        AlertStatus @default(PENDING)
   createdAt     DateTime    @default(now())
   measurement   Measurement @relation(fields: [measurementId], references: [id], onDelete: Cascade)
-  notes         String?     @db.Text
 }
 
 
