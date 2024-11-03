@@ -28,34 +28,10 @@ export const authOptions = {
           id: userFound.id,
           name: userFound.username,
           email: userFound.email,
-          role: userFound.role, // Asegúrate de incluir el campo 'role' si lo necesitas
-          // Incluye otros campos que necesites
         };
       },
     }),
   ],
-  callbacks: {
-    async jwt({ token, user }) {
-      // Cuando el usuario inicia sesión, agrega información adicional al token
-      if (user) {
-        token.id = user.id;
-        token.role = user.role;
-        token.name = user.name; // Ya está incluido por defecto, pero lo aseguramos
-        token.email = user.email;
-      }
-      return token;
-    },
-    async session({ session, token }) {
-      // Incluye los datos adicionales en la sesión
-      if (token) {
-        session.user.id = token.id;
-        session.user.role = token.role;
-        session.user.name = token.name;
-        session.user.email = token.email;
-      }
-      return session;
-    },
-  },
   pages: {
     signIn: "/auth/login",
   },
