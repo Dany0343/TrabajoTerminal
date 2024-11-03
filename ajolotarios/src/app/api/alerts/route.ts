@@ -45,7 +45,6 @@ export async function POST(request: Request) {
         priority,
         status: status || 'PENDING',
         resolvedAt: resolvedAt ? new Date(resolvedAt) : null,
-        resolvedBy,
         notes,
       },
     });

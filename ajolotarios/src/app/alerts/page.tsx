@@ -49,7 +49,6 @@ export default function AlertsPage() {
     priority: 'MEDIUM',
     status: 'PENDING',
     resolvedAt: '',
-    resolvedBy: undefined,
     notes: '',
   })
   const [isEditing, setIsEditing] = useState(false)

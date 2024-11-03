@@ -21,7 +21,6 @@ model User {
   role          Role        @default(AJOLATORY_SUBSCRIBER)
   phone         String      @db.VarChar(20)
   ajolotaries   Ajolotary[]
-  resolvedAlerts Alert[]    @relation("AlertResolver")
   createdBy     Int?
   creator       User?       @relation("UserCreator", fields: [createdBy], references: [id])
   createdUsers  User[]      @relation("UserCreator")
@@ -197,10 +196,9 @@ model Alert {
   createdAt     DateTime    @default(now())
   measurement   Measurement @relation(fields: [measurementId], references: [id], onDelete: Cascade)
   resolvedAt    DateTime?
-  resolvedBy    Int?
-  resolver      User?       @relation("AlertResolver", fields: [resolvedBy], references: [id])
   notes         String?     @db.Text
 }
+
 
 enum AlertType {
   PARAMETER_OUT_OF_RANGE
