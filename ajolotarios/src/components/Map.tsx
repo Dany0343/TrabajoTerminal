@@ -80,14 +80,20 @@ const Map: React.FC<MapProps> = ({ ajolotaries }) => {
         attribution='&copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
-      {geocodedAjolotaries.map(ajolotary => (
-        <Marker key={ajolotary.id} position={[ajolotary.lat, ajolotary.lon]}>
-          <Popup>
-            <strong>{ajolotary.name}</strong><br />
-            {ajolotary.location}
-          </Popup>
-        </Marker>
-      ))}
+      {geocodedAjolotaries.length > 0 ? (
+        geocodedAjolotaries.map((ajolotary) => (
+          ajolotary.lat && ajolotary.lon && (
+            <Marker key={ajolotary.id} position={[ajolotary.lat, ajolotary.lon]}>
+              <Popup>
+                <strong>{ajolotary.name}</strong><br />
+                {ajolotary.location}
+              </Popup>
+            </Marker>
+          )
+        ))
+      ) : (
+        <div className="text-center text-muted">No hay ajolotarios para mostrar en el mapa.</div>
+      )}
     </MapContainer>
   )
 }
