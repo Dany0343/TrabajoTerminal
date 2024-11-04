@@ -18,21 +18,26 @@ const MeasurementHistory: React.FC<MeasurementHistoryProps> = ({ measurements })
         <thead>
           <tr>
             <th className="py-2 px-4 border-b">Fecha y Hora</th>
-            <th className="py-2 px-4 border-b">Valor</th>
             <th className="py-2 px-4 border-b">Parámetro</th>
+            <th className="py-2 px-4 border-b">Valor</th>
           </tr>
         </thead>
         <tbody>
-          {sortedMeasurements.map(measurement => {
-            console.log(`La medida es: ${measurement.parameterName}, ${measurement.value}, ${measurement.dateTime}`);
-            return (
-              <tr key={measurement.id} className="hover:bg-gray-100 dark:hover:bg-gray-700">
-                <td className="py-2 px-4 border-b">{new Date(measurement.dateTime).toLocaleString()}</td>
-                <td className="py-2 px-4 border-b">{measurement.value}</td>
-                <td className="py-2 px-4 border-b">{measurement.parameterName}</td>
+          {sortedMeasurements.map(measurement => (
+            measurement.parameters.map(param => (
+              <tr key={`${measurement.id}-${param.id}`} className="hover:bg-gray-100 dark:hover:bg-gray-700">
+                <td className="py-2 px-4 border-b">
+                  {new Date(measurement.dateTime).toLocaleString()}
+                </td>
+                <td className="py-2 px-4 border-b">
+                  {param.parameter.name} 
+                </td>
+                <td className="py-2 px-4 border-b">
+                  {param.value}
+                </td>
               </tr>
-            );
-          })}
+            ))
+          ))}
         </tbody>
       </table>
     </div>
@@ -40,4 +45,3 @@ const MeasurementHistory: React.FC<MeasurementHistoryProps> = ({ measurements })
 }
 
 export default MeasurementHistory
-// xd

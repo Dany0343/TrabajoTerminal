@@ -8,7 +8,11 @@ export async function GET() {
   try {
     const measurements = await db.measurement.findMany({
       include: {
-        device: true,
+        device: {
+          include: {
+            tank: true, 
+          },
+        },
         sensor: {
           include: {
             type: true,

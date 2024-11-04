@@ -73,8 +73,8 @@ export default function Dashboard() {
 
   // Filtrar mediciones según la instalación seleccionada
   const filteredMeasurements = selectedAjolotary
-    ? measurements.filter(m => m.ajolotaryId === selectedAjolotary.id)
-    : measurements
+  ? measurements.filter(m => m.device.tank.ajolotaryId === selectedAjolotary.id)
+  : measurements
 
   if (loading) {
     return <LoadingSpinner />
