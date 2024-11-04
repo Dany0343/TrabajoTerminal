@@ -21,14 +21,14 @@ interface Measurement {
 
 interface ParameterTrendsChartProps {
   parameterName: string
-  measurements: Measurement[]
+  measurements?: Measurement[] // Hacer que measurements sea opcional
 }
 
-const ParameterTrendsChart: React.FC<ParameterTrendsChartProps> = ({ parameterName, measurements }) => {
+const ParameterTrendsChart: React.FC<ParameterTrendsChartProps> = ({ parameterName, measurements = [] }) => { // Asignar [] por defecto
   const [chartData, setChartData] = useState<any>(null)
 
   useEffect(() => {
-    if (measurements && measurements.length > 0) {
+    if (measurements.length > 0) {
       const sortedMeasurements = measurements.sort(
         (a, b) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime()
       )

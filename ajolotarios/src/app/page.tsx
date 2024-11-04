@@ -6,7 +6,6 @@ import { Bell, Plus, Edit, Activity, Thermometer, Droplet } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Progress } from "@/components/ui/progress"
 import dynamic from 'next/dynamic'
 import LoadingSpinner from '@/components/LoadingSpinner' 
 import ParameterTrendsChart from '@/components/ParameterTrendsChart'
@@ -61,6 +60,13 @@ export default function Dashboard() {
 
   const activeTanks = tanks.filter(tank => tank.status === 'ACTIVE')
   const criticalAlerts = alerts.filter(alert => alert.priority === 'HIGH' && alert.status === 'PENDING')
+
+  // Datos de ejemplo para el gráfico (puedes eliminarlos cuando tengas datos reales)
+  const sampleMeasurements = [
+    { dateTime: '2024-01-01T00:00:00Z', value: 20, parameterName: 'Temperatura' },
+    { dateTime: '2024-01-02T00:00:00Z', value: 21, parameterName: 'Temperatura' },
+    { dateTime: '2024-01-03T00:00:00Z', value: 19, parameterName: 'Temperatura' },
+  ]
 
   if (loading) {
     return <LoadingSpinner />
@@ -124,16 +130,16 @@ export default function Dashboard() {
 
         {/* Charts and Map */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7 mb-6">
-        <Card className="col-span-4">
-          <CardHeader>
-            <CardTitle>Tendencias de Parámetros Ambientales</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {/* Supongamos que tienes una API para obtener mediciones por parámetro */}
-            <ParameterTrendsChart parameterName="Temperatura" measurements={[]} />
-            {/* Implementa la lógica para obtener y pasar las mediciones reales */}
-          </CardContent>
-        </Card>
+          <Card className="col-span-4">
+            <CardHeader>
+              <CardTitle>Tendencias de Parámetros Ambientales</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {/* Usa datos de ejemplo mientras desarrollas */}
+              <ParameterTrendsChart parameterName="Temperatura" measurements={sampleMeasurements} />
+              {/* Cuando tengas datos reales, reemplaza sampleMeasurements con los datos reales */}
+            </CardContent>
+          </Card>
           <Card className="col-span-3">
             <CardHeader>
               <CardTitle>Mapa de Instalaciones</CardTitle>
