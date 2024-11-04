@@ -35,7 +35,7 @@ const AuthenticatedHeader = () => {
             <Link className="transition-colors hover:text-foreground/80 text-foreground/60 font-semibold" href={"/tanks"}>
             Tanques
           </Link>
-            <Link className="transition-colors hover:text-foreground/80 text-foreground/60 font-semibold" href={"/axolots"}>
+            <Link className="transition-colors hover:text-foreground/80 text-foreground/60 font-semibold" href={"/axolotls"}>
             Ajolotes
           </Link>
           <Link className="transition-colors hover:text-foreground/80 text-foreground/60 font-semibold" href={"/alerts"}>
