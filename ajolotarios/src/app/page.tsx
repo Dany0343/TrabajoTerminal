@@ -8,8 +8,8 @@ import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import dynamic from 'next/dynamic'
 import LoadingSpinner from '@/components/LoadingSpinner' 
-import ParameterTrendsChart from '@/components/ParameterTrendsChart'
 import AjolotarySelector from '@/components/AjolotarySelector'
+import MeasurementHistory from '@/components/MeasurementHistory' // Importar el nuevo componente
 import jsPDF from 'jspdf'
 import html2canvas from 'html2canvas'
 
@@ -73,8 +73,8 @@ export default function Dashboard() {
 
   // Filtrar mediciones según la instalación seleccionada
   const filteredMeasurements = selectedAjolotary
-    ? measurements.filter(m => m.ajolotaryId === selectedAjolotary.id && m.parameterName === 'Temperatura')
-    : measurements.filter(m => m.parameterName === 'Temperatura')
+    ? measurements.filter(m => m.ajolotaryId === selectedAjolotary.id)
+    : measurements
 
   if (loading) {
     return <LoadingSpinner />
@@ -95,173 +95,187 @@ export default function Dashboard() {
           onSelect={setSelectedAjolotary} 
         />
 
-        {/* Summary Cards */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-6">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Instalaciones</CardTitle>
-              <Bell className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{ajolotaries.length}</div>
-              <p className="text-xs text-muted-foreground">Ajolotarios registrados</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Tanques Activos</CardTitle>
-              <Thermometer className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{activeTanks.length}</div>
-              <p className="text-xs text-muted-foreground">De {tanks.length} tanques totales</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Ajolotes Registrados</CardTitle>
-              <Avatar className="h-4 w-4">
-                <AvatarImage src="/placeholder.svg" alt="Ajolote" />
-                <AvatarFallback>AX</AvatarFallback>
-              </Avatar>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{axolotls.length}</div>
-              <p className="text-xs text-muted-foreground">Ajolotes en el sistema</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Alertas Activas</CardTitle>
-              <Bell className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{criticalAlerts.length}</div>
-              <p className="text-xs text-muted-foreground">Alertas críticas pendientes</p>
-            </CardContent>
-          </Card>
-        </div>
+        {/* Envolver el contenido que se incluirá en el PDF */}
+        <div id="report-content">
+          {/* Summary Cards */}
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-6">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total Instalaciones</CardTitle>
+                <Bell className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{ajolotaries.length}</div>
+                <p className="text-xs text-muted-foreground">Ajolotarios registrados</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Tanques Activos</CardTitle>
+                <Thermometer className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{activeTanks.length}</div>
+                <p className="text-xs text-muted-foreground">De {tanks.length} tanques totales</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Ajolotes Registrados</CardTitle>
+                <Avatar className="h-4 w-4">
+                  <AvatarImage src="/placeholder.svg" alt="Ajolote" />
+                  <AvatarFallback>AX</AvatarFallback>
+                </Avatar>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{axolotls.length}</div>
+                <p className="text-xs text-muted-foreground">Ajolotes en el sistema</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Alertas Activas</CardTitle>
+                <Bell className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{criticalAlerts.length}</div>
+                <p className="text-xs text-muted-foreground">Alertas críticas pendientes</p>
+              </CardContent>
+            </Card>
+          </div>
 
-        {/* Charts and Map */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7 mb-6">
-          <Card className="col-span-4">
-            <CardHeader>
-              <CardTitle>Tendencias de Parámetros Ambientales</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {/* Mostrar el gráfico solo si hay mediciones */}
-              <ParameterTrendsChart 
-                parameterName="Temperatura" 
-                measurements={filteredMeasurements} 
-              />
-            </CardContent>
-          </Card>
-          <Card className="col-span-3">
-            <CardHeader>
-              <CardTitle>Mapa de Instalaciones</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="h-[400px]">
-                <Map ajolotaries={selectedAjolotary ? [selectedAjolotary] : ajolotaries} />
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+          {/* Histórico de Mediciones */}
+          <div className="mb-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Histórico de Mediciones</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {filteredMeasurements.length > 0 ? (
+                  <MeasurementHistory measurements={filteredMeasurements} />
+                ) : (
+                  <div className="text-center text-muted">No hay mediciones disponibles.</div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
 
-        {/* Alerts and Quick Actions */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 mb-6">
-          <Card className="col-span-2">
-            <CardHeader>
-              <CardTitle>Alertas Recientes</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {alerts.length > 0 ? (
-                <div className="space-y-4">
-                  {alerts.slice(0, 3).map(alert => (
-                    <div key={alert.id} className="flex items-center">
-                      <div className={`w-2 h-2 rounded-full mr-2 ${
-                        alert.priority === 'HIGH' ? 'bg-red-500' :
-                        alert.priority === 'MEDIUM' ? 'bg-yellow-500' : 'bg-green-500'
-                      }`}></div>
-                      <span className="flex-1">{alert.description}</span>
-                      <span className="text-xs text-muted-foreground">{alert.status}</span>
-                    </div>
-                  ))}
+          {/* Charts and Map */}
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7 mb-6">
+            {/* Eliminar el gráfico de tendencias y mantener solo el mapa */}
+            <Card className="col-span-7">
+              <CardHeader>
+                <CardTitle>Mapa de Instalaciones</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="h-[400px]">
+                  <Map ajolotaries={selectedAjolotary ? [selectedAjolotary] : ajolotaries} />
                 </div>
-              ) : (
-                <div className="text-center text-muted">No hay alertas recientes.</div>
-              )}
-            </CardContent>
-          </Card>
-          {/* Simplificar Acciones Rápidas a solo "Generar Informe" */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Acciones Rápidas</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <Button 
-                  className="w-full justify-start flex items-center" 
-                  onClick={() => generatePDF()}
-                >
-                  <FileText className="mr-2 h-4 w-4" />
-                  Generar Informe
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+              </CardContent>
+            </Card>
+          </div>
 
-        {/* Featured Tanks and Ajolotes */}
-        <div className="grid gap-4 md:grid-cols-2 mb-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Tanques Destacados</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {tanks.length > 0 ? (
-                <div className="space-y-4">
-                  {tanks.slice(0, 3).map(tank => (
-                    <div key={tank.id} className="flex items-center justify-between">
-                      <div>
-                        <h3 className="font-medium">{tank.name}</h3>
-                        <p className="text-sm text-muted-foreground">Capacidad: {tank.capacity}L</p>
+          {/* Alerts and Quick Actions */}
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 mb-6">
+            <Card className="col-span-2">
+              <CardHeader>
+                <CardTitle>Alertas Recientes</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {alerts.length > 0 ? (
+                  <div className="space-y-4">
+                    {alerts.slice(0, 3).map(alert => (
+                      <div key={alert.id} className="flex items-center">
+                        <div className={`w-2 h-2 rounded-full mr-2 ${
+                          alert.priority === 'HIGH' ? 'bg-red-500' :
+                          alert.priority === 'MEDIUM' ? 'bg-yellow-500' : 'bg-green-500'
+                        }`}></div>
+                        <span className="flex-1">{alert.description}</span>
+                        <span className="text-xs text-muted-foreground">{alert.status}</span>
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center text-muted">No hay alertas recientes.</div>
+                )}
+              </CardContent>
+            </Card>
+            {/* Simplificar Acciones Rápidas a solo "Generar Informe" */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Acciones Rápidas</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  <Button 
+                    className="w-full justify-start flex items-center" 
+                    onClick={() => generatePDF()}
+                  >
+                    <FileText className="mr-2 h-4 w-4" />
+                    Generar Informe
+                  </Button>
                 </div>
-              ) : (
-                <div className="text-center text-muted">No hay tanques destacados.</div>
-              )}
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle>Ajolotes Destacados</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {axolotls.length > 0 ? (
-                <div className="space-y-4">
-                  {axolotls.slice(0, 3).map(axolotl => (
-                    <div key={axolotl.id} className="flex items-center space-x-4">
-                      <Avatar>
-                        <AvatarImage src="/placeholder.svg" alt="Ajolote" />
-                        <AvatarFallback>AX</AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <h3 className="font-medium">{axolotl.name}</h3>
-                        <p className="text-sm text-muted-foreground">Edad: {axolotl.age} años | Salud: {axolotl.health}</p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Featured Tanks and Ajolotes */}
+          <div className="grid gap-4 md:grid-cols-2 mb-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Tanques Destacados</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {tanks.length > 0 ? (
+                  <div className="space-y-4">
+                    {tanks.slice(0, 3).map(tank => (
+                      <div key={tank.id} className="flex items-center justify-between">
+                        <div>
+                          <h3 className="font-medium">{tank.name}</h3>
+                          <p className="text-sm text-muted-foreground">Capacidad: {tank.capacity}L</p>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Thermometer className="h-4 w-4 text-muted-foreground" />
+                          <span>--°C</span>
+                          <Droplet className="h-4 w-4 text-muted-foreground" />
+                          <span>pH --</span>
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center text-muted">No hay ajolotes destacados.</div>
-              )}
-            </CardContent>
-          </Card>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center text-muted">No hay tanques destacados.</div>
+                )}
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle>Ajolotes Destacados</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {axolotls.length > 0 ? (
+                  <div className="space-y-4">
+                    {axolotls.slice(0, 3).map(axolotl => (
+                      <div key={axolotl.id} className="flex items-center space-x-4">
+                        <Avatar>
+                          <AvatarImage src="/placeholder.svg" alt="Ajolote" />
+                          <AvatarFallback>AX</AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <h3 className="font-medium">{axolotl.name}</h3>
+                          <p className="text-sm text-muted-foreground">Edad: {axolotl.age} años | Salud: {axolotl.health}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center text-muted">No hay ajolotes destacados.</div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
         </div>
-      </main>
+      </main> {/* Cierre del elemento main */}
 
       {/* Footer */}
       <footer className="border-t">
@@ -280,7 +294,7 @@ export default function Dashboard() {
       </footer>
     </div>
   )
-  
+
   // Función para generar PDF
   async function generatePDF() {
     const input = document.getElementById('report-content') // Captura solo esta sección
@@ -300,11 +314,6 @@ export default function Dashboard() {
       doc.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight)
     })
 
-    // Sacar fecha del dia
-    const today = new Date()
-    const date = `${today.getFullYear()}-${today.getMonth() + 1}-${today.getDate()}`
-    const nombre = `informe-ajolotarios-${date}.pdf`
-
-    doc.save(nombre)
+    doc.save('informe-ajolotarios.pdf')
   }
 }
