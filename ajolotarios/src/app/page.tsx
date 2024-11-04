@@ -2,15 +2,18 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Bell, Plus, Edit, Activity, Thermometer, Droplet } from 'lucide-react'
+import { Bell, FileText, Thermometer, Droplet } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import dynamic from 'next/dynamic'
 import LoadingSpinner from '@/components/LoadingSpinner' 
 import ParameterTrendsChart from '@/components/ParameterTrendsChart'
+import AjolotarySelector from '@/components/AjolotarySelector'
+import jsPDF from 'jspdf'
+import html2canvas from 'html2canvas'
 
-import { Ajolotary, Tank, Axolotl, Alert } from '@/types'
+import { Ajolotary, Tank, Axolotl, Alert, Measurement } from '@/types'
 
 const Map = dynamic(() => import('@/components/Map'), { ssr: false, loading: () => <LoadingSpinner /> })
 
@@ -19,34 +22,41 @@ export default function Dashboard() {
   const [tanks, setTanks] = useState<Tank[]>([])
   const [axolotls, setAxolotls] = useState<Axolotl[]>([])
   const [alerts, setAlerts] = useState<Alert[]>([])
+  const [measurements, setMeasurements] = useState<Measurement[]>([]) // Nuevo estado para mediciones
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  
+  // Nuevo estado para la selección
+  const [selectedAjolotary, setSelectedAjolotary] = useState<Ajolotary | null>(null)
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [ajolotariesRes, tanksRes, axolotlsRes, alertsRes] = await Promise.all([
+        const [ajolotariesRes, tanksRes, axolotlsRes, alertsRes, measurementsRes] = await Promise.all([
           fetch('/api/ajolotaries'),
           fetch('/api/tanks'),
           fetch('/api/axolotls'),
-          fetch('/api/alerts')
+          fetch('/api/alerts'),
+          fetch('/api/measurements') // Nueva API Route para mediciones
         ])
 
-        if (!ajolotariesRes.ok || !tanksRes.ok || !axolotlsRes.ok || !alertsRes.ok) {
+        if (!ajolotariesRes.ok || !tanksRes.ok || !axolotlsRes.ok || !alertsRes.ok || !measurementsRes.ok) {
           throw new Error('Error al obtener los datos')
         }
 
-        const [ajolotariesData, tanksData, axolotlsData, alertsData] = await Promise.all([
+        const [ajolotariesData, tanksData, axolotlsData, alertsData, measurementsData] = await Promise.all([
           ajolotariesRes.json(),
           tanksRes.json(),
           axolotlsRes.json(),
-          alertsRes.json()
+          alertsRes.json(),
+          measurementsRes.json(),
         ])
 
-        setAjolotaries(ajolotariesData)
-        setTanks(tanksData)
-        setAxolotls(axolotlsData)
-        setAlerts(alertsData)
+        setAjolotaries(Array.isArray(ajolotariesData) ? ajolotariesData : [])
+        setTanks(Array.isArray(tanksData) ? tanksData : [])
+        setAxolotls(Array.isArray(axolotlsData) ? axolotlsData : [])
+        setAlerts(Array.isArray(alertsData) ? alertsData : [])
+        setMeasurements(Array.isArray(measurementsData) ? measurementsData : [])
       } catch (err: any) {
         console.error('Error fetching data:', err)
         setError(err.message || 'Error desconocido')
@@ -61,12 +71,10 @@ export default function Dashboard() {
   const activeTanks = tanks.filter(tank => tank.status === 'ACTIVE')
   const criticalAlerts = alerts.filter(alert => alert.priority === 'HIGH' && alert.status === 'PENDING')
 
-  // Datos de ejemplo para el gráfico (puedes eliminarlos cuando tengas datos reales)
-  const sampleMeasurements = [
-    { dateTime: '2024-01-01T00:00:00Z', value: 20, parameterName: 'Temperatura' },
-    { dateTime: '2024-01-02T00:00:00Z', value: 21, parameterName: 'Temperatura' },
-    { dateTime: '2024-01-03T00:00:00Z', value: 19, parameterName: 'Temperatura' },
-  ]
+  // Filtrar mediciones según la instalación seleccionada
+  const filteredMeasurements = selectedAjolotary
+    ? measurements.filter(m => m.ajolotaryId === selectedAjolotary.id && m.parameterName === 'Temperatura')
+    : measurements.filter(m => m.parameterName === 'Temperatura')
 
   if (loading) {
     return <LoadingSpinner />
@@ -80,6 +88,12 @@ export default function Dashboard() {
     <div className="min-h-screen bg-background">
       <main className="container mx-auto py-6">
         <h1 className="text-3xl font-bold mb-6">Panel de Control</h1>
+
+        {/* Selector de Instalaciones */}
+        <AjolotarySelector 
+          ajolotaries={ajolotaries} 
+          onSelect={setSelectedAjolotary} 
+        />
 
         {/* Summary Cards */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-6">
@@ -135,9 +149,11 @@ export default function Dashboard() {
               <CardTitle>Tendencias de Parámetros Ambientales</CardTitle>
             </CardHeader>
             <CardContent>
-              {/* Usa datos de ejemplo mientras desarrollas */}
-              <ParameterTrendsChart parameterName="Temperatura" measurements={sampleMeasurements} />
-              {/* Cuando tengas datos reales, reemplaza sampleMeasurements con los datos reales */}
+              {/* Mostrar el gráfico solo si hay mediciones */}
+              <ParameterTrendsChart 
+                parameterName="Temperatura" 
+                measurements={filteredMeasurements} 
+              />
             </CardContent>
           </Card>
           <Card className="col-span-3">
@@ -146,7 +162,7 @@ export default function Dashboard() {
             </CardHeader>
             <CardContent>
               <div className="h-[400px]">
-                <Map ajolotaries={ajolotaries} />
+                <Map ajolotaries={selectedAjolotary ? [selectedAjolotary] : ajolotaries} />
               </div>
             </CardContent>
           </Card>
@@ -159,36 +175,36 @@ export default function Dashboard() {
               <CardTitle>Alertas Recientes</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {alerts.slice(0, 3).map(alert => (
-                  <div key={alert.id} className="flex items-center">
-                    <div className={`w-2 h-2 rounded-full mr-2 ${
-                      alert.priority === 'HIGH' ? 'bg-red-500' :
-                      alert.priority === 'MEDIUM' ? 'bg-yellow-500' : 'bg-green-500'
-                    }`}></div>
-                    <span className="flex-1">{alert.description}</span>
-                    <span className="text-xs text-muted-foreground">{alert.status}</span>
-                  </div>
-                ))}
-              </div>
+              {alerts.length > 0 ? (
+                <div className="space-y-4">
+                  {alerts.slice(0, 3).map(alert => (
+                    <div key={alert.id} className="flex items-center">
+                      <div className={`w-2 h-2 rounded-full mr-2 ${
+                        alert.priority === 'HIGH' ? 'bg-red-500' :
+                        alert.priority === 'MEDIUM' ? 'bg-yellow-500' : 'bg-green-500'
+                      }`}></div>
+                      <span className="flex-1">{alert.description}</span>
+                      <span className="text-xs text-muted-foreground">{alert.status}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center text-muted">No hay alertas recientes.</div>
+              )}
             </CardContent>
           </Card>
+          {/* Simplificar Acciones Rápidas a solo "Generar Informe" */}
           <Card>
             <CardHeader>
               <CardTitle>Acciones Rápidas</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
-                <Button className="w-full justify-start">
-                  <Plus className="mr-2 h-4 w-4" />
-                  Agregar Nueva Instalación
-                </Button>
-                <Button className="w-full justify-start" variant="outline">
-                  <Edit className="mr-2 h-4 w-4" />
-                  Registrar Nuevo Tanque
-                </Button>
-                <Button className="w-full justify-start" variant="outline">
-                  <Activity className="mr-2 h-4 w-4" />
+                <Button 
+                  className="w-full justify-start flex items-center" 
+                  onClick={() => generatePDF()}
+                >
+                  <FileText className="mr-2 h-4 w-4" />
                   Generar Informe
                 </Button>
               </div>
@@ -203,22 +219,26 @@ export default function Dashboard() {
               <CardTitle>Tanques Destacados</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {tanks.slice(0, 3).map(tank => (
-                  <div key={tank.id} className="flex items-center justify-between">
-                    <div>
-                      <h3 className="font-medium">{tank.name}</h3>
-                      <p className="text-sm text-muted-foreground">Capacidad: {tank.capacity}L</p>
+              {tanks.length > 0 ? (
+                <div className="space-y-4">
+                  {tanks.slice(0, 3).map(tank => (
+                    <div key={tank.id} className="flex items-center justify-between">
+                      <div>
+                        <h3 className="font-medium">{tank.name}</h3>
+                        <p className="text-sm text-muted-foreground">Capacidad: {tank.capacity}L</p>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Thermometer className="h-4 w-4 text-muted-foreground" />
+                        <span>--°C</span>
+                        <Droplet className="h-4 w-4 text-muted-foreground" />
+                        <span>pH --</span>
+                      </div>
                     </div>
-                    <div className="flex items-center space-x-2">
-                      <Thermometer className="h-4 w-4 text-muted-foreground" />
-                      <span>--°C</span>
-                      <Droplet className="h-4 w-4 text-muted-foreground" />
-                      <span>pH --</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center text-muted">No hay tanques destacados.</div>
+              )}
             </CardContent>
           </Card>
           <Card>
@@ -226,20 +246,24 @@ export default function Dashboard() {
               <CardTitle>Ajolotes Destacados</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {axolotls.slice(0, 3).map(axolotl => (
-                  <div key={axolotl.id} className="flex items-center space-x-4">
-                    <Avatar>
-                      <AvatarImage src="/placeholder.svg" alt="Ajolote" />
-                      <AvatarFallback>AX</AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <h3 className="font-medium">{axolotl.name}</h3>
-                      <p className="text-sm text-muted-foreground">Edad: {axolotl.age} años | Salud: {axolotl.health}</p>
+              {axolotls.length > 0 ? (
+                <div className="space-y-4">
+                  {axolotls.slice(0, 3).map(axolotl => (
+                    <div key={axolotl.id} className="flex items-center space-x-4">
+                      <Avatar>
+                        <AvatarImage src="/placeholder.svg" alt="Ajolote" />
+                        <AvatarFallback>AX</AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <h3 className="font-medium">{axolotl.name}</h3>
+                        <p className="text-sm text-muted-foreground">Edad: {axolotl.age} años | Salud: {axolotl.health}</p>
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center text-muted">No hay ajolotes destacados.</div>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -262,4 +286,26 @@ export default function Dashboard() {
       </footer>
     </div>
   )
+  
+  // Función para generar PDF
+  async function generatePDF() {
+    const input = document.getElementById('report-content') // Captura solo esta sección
+
+    if (!input) {
+      alert('No se encontró el contenido para el informe.')
+      return
+    }
+
+    const doc = new jsPDF('p', 'pt', 'a4')
+
+    await html2canvas(input, { scale: 2, useCORS: true }).then((canvas) => {
+      const imgData = canvas.toDataURL('image/png')
+      const imgProps = doc.getImageProperties(imgData)
+      const pdfWidth = doc.internal.pageSize.getWidth()
+      const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width
+      doc.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight)
+    })
+
+    doc.save('informe-ajolotarios.pdf')
+  }
 }

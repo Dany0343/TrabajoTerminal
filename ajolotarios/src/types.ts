@@ -26,4 +26,11 @@ export interface Ajolotary {
     priority: string;
     status: string;
   }
-  
+
+  export interface Measurement {
+    id: number
+    ajolotaryId: number
+    dateTime: string
+    value: number
+    parameterName: string
+  }
