@@ -1,18 +1,31 @@
+// src/app/api/sensor-types/route.ts
+
 import { NextResponse } from 'next/server';
-import db from '@/lib/db'
+import db from '@/lib/db'; // Asegúrate de que esta ruta es correcta
 
+export async function POST(req: Request) {
+  try {
+    const { name, magnitude } = await req.json();
 
-export async function GET() {
-  const sensorTypes = await db.sensorType.findMany();
-  return NextResponse.json(sensorTypes);
-}
+    // Validar que ambos campos estén presentes
+    if (!name || !magnitude) {
+      return NextResponse.json(
+        { error: 'Nombre y magnitud son requeridos' },
+        { status: 400 }
+      );
+    }
 
-export async function POST(request: Request) {
-  const data = await request.json();
-  const { name } = data;
-  if (!name) {
-    return new NextResponse('Nombre es requerido', { status: 400 });
+    // Crear el nuevo SensorType
+    const createdType = await db.sensorType.create({
+      data: { name, magnitude },
+    });
+
+    return NextResponse.json(createdType, { status: 201 });
+  } catch (error: any) {
+    console.error('Error al crear SensorType:', error);
+    return NextResponse.json(
+      { error: 'Error interno del servidor' },
+      { status: 500 }
+    );
   }
-  const createdType = await db.sensorType.create({ data: { name } });
-  return NextResponse.json(createdType);
 }
