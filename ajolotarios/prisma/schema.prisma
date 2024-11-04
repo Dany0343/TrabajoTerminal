@@ -83,10 +83,10 @@ model Sensor {
   id                Int             @id @default(autoincrement())
   model             String          @db.VarChar(50)
   serialNumber      String          @unique @db.VarChar(50)
-  lastConnection    DateTime        @default(now())
+  lastConnection   DateTime?        @default(now())
   typeId            Int
   deviceId          Int
-  calibratedAt      DateTime        @default(now())
+  calibratedAt    DateTime?        @default(now())
   device            Device          @relation(fields: [deviceId], references: [id], onDelete: Cascade)
   type              SensorType      @relation(fields: [typeId], references: [id])
   status            SensorStatus    @default(ACTIVE)

@@ -25,16 +25,13 @@ export async function POST(request: Request) {
     const {
       model,
       serialNumber,
-      lastConnection,
-      magnitude,
       typeId,
       status, 
       deviceId,
-      calibratedAt,
     } = data;
 
     // Validación de campos requeridos
-    if (!model || !serialNumber || !magnitude || !typeId || !status || !deviceId) {
+    if (!model || !serialNumber || !typeId || !status || !deviceId) {
       return new NextResponse('Faltan campos requeridos', { status: 400 });
     }
 
@@ -42,11 +39,9 @@ export async function POST(request: Request) {
       data: {
         model,
         serialNumber,
-        lastConnection: lastConnection ? new Date(lastConnection) : undefined,
         typeId,
         deviceId,
         status,
-        calibratedAt: calibratedAt ? new Date(calibratedAt) : undefined,
       },
     });
 

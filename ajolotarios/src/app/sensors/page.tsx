@@ -535,7 +535,7 @@ export default function SensorsPage() {
                   </Select>
                 </div>
                 {/* Fechas */}
-                <div className="grid grid-cols-4 items-center gap-4">
+                {/* <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="lastConnection" className="text-right">Última Conexión</Label>
                   <Input
                     id="lastConnection"
@@ -564,7 +564,7 @@ export default function SensorsPage() {
                     onChange={(e) => setNewSensor({ ...newSensor, nextCalibrationAt: e.target.value })}
                     className="col-span-3"
                   />
-                </div>
+                </div> */}
               </div>
               <Button onClick={addSensor}>Agregar Sensor</Button>
             </DialogContent>
