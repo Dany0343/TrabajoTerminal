@@ -1,14 +1,78 @@
+'use client'
+
+import { useEffect, useState } from 'react'
 import { Bell, MessageSquare, User, LogOut, Settings, HelpCircle, Plus, Edit, Activity, Thermometer, Droplet } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Progress } from "@/components/ui/progress"
 
+interface Ajolotary {
+  id: number
+  name: string
+  location: string
+}
+
+interface Tank {
+  id: number
+  name: string
+  capacity: number
+  status: string
+}
+
+interface Axolotl {
+  id: number
+  name: string
+  age: number
+  health: string
+}
+
+interface Alert {
+  id: number
+  alertType: string
+  description: string
+  priority: string
+  status: string
+}
+
 export default function Dashboard() {
+  const [ajolotaries, setAjolotaries] = useState<Ajolotary[]>([])
+  const [tanks, setTanks] = useState<Tank[]>([])
+  const [axolotls, setAxolotls] = useState<Axolotl[]>([])
+  const [alerts, setAlerts] = useState<Alert[]>([])
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [ajolotariesRes, tanksRes, axolotlsRes, alertsRes] = await Promise.all([
+          fetch('/api/ajolotaries'),
+          fetch('/api/tanks'),
+          fetch('/api/axolotls'),
+          fetch('/api/alerts')
+        ])
+
+        const ajolotariesData = await ajolotariesRes.json()
+        const tanksData = await tanksRes.json()
+        const axolotlsData = await axolotlsRes.json()
+        const alertsData = await alertsRes.json()
+
+        setAjolotaries(ajolotariesData)
+        setTanks(tanksData)
+        setAxolotls(axolotlsData)
+        setAlerts(alertsData)
+      } catch (error) {
+        console.error('Error fetching data:', error)
+      }
+    }
+
+    fetchData()
+  }, [])
+
+  const activeTanks = tanks.filter(tank => tank.status === 'ACTIVE')
+  const criticalAlerts = alerts.filter(alert => alert.priority === 'HIGH' && alert.status === 'PENDING')
+
   return (
     <div className="min-h-screen bg-background">
-
-      {/* Main Content */}
       <main className="container mx-auto py-6">
         <h1 className="text-3xl font-bold mb-6">Panel de Control</h1>
 
@@ -31,8 +95,8 @@ export default function Dashboard() {
               </svg>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">12</div>
-              <p className="text-xs text-muted-foreground">+2 este mes</p>
+              <div className="text-2xl font-bold">{ajolotaries.length}</div>
+              <p className="text-xs text-muted-foreground">Ajolotarios registrados</p>
             </CardContent>
           </Card>
           <Card>
@@ -52,8 +116,8 @@ export default function Dashboard() {
               </svg>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">54</div>
-              <p className="text-xs text-muted-foreground">+8 desde la última semana</p>
+              <div className="text-2xl font-bold">{activeTanks.length}</div>
+              <p className="text-xs text-muted-foreground">De {tanks.length} tanques totales</p>
             </CardContent>
           </Card>
           <Card>
@@ -75,8 +139,8 @@ export default function Dashboard() {
               </svg>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">321</div>
-              <p className="text-xs text-muted-foreground">+18 este mes</p>
+              <div className="text-2xl font-bold">{axolotls.length}</div>
+              <p className="text-xs text-muted-foreground">Ajolotes en el sistema</p>
             </CardContent>
           </Card>
           <Card>
@@ -96,8 +160,8 @@ export default function Dashboard() {
               </svg>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">9</div>
-              <p className="text-xs text-muted-foreground">3 críticas, 4 medias, 2 bajas</p>
+              <div className="text-2xl font-bold">{criticalAlerts.length}</div>
+              <p className="text-xs text-muted-foreground">Alertas críticas pendientes</p>
             </CardContent>
           </Card>
         </div>
@@ -112,7 +176,7 @@ export default function Dashboard() {
               <div className="h-[200px]">
                 {/* Aquí iría el componente de gráfico real */}
                 <div className="flex items-center justify-center h-full bg-muted rounded-md">
-                  Gráfico de Tendencias
+                  Gráfico de Tendencias (Implementar con datos reales)
                 </div>
               </div>
             </CardContent>
@@ -125,7 +189,7 @@ export default function Dashboard() {
               <div className="h-[200px]">
                 {/* Aquí iría el componente de mapa real */}
                 <div className="flex items-center justify-center h-full bg-muted rounded-md">
-                  Mapa Interactivo
+                  Mapa Interactivo (Implementar con ubicaciones reales)
                 </div>
               </div>
             </CardContent>
@@ -140,21 +204,16 @@ export default function Dashboard() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                <div className="flex items-center">
-                  <div className="w-2 h-2 bg-red-500 rounded-full mr-2"></div>
-                  <span className="flex-1">Temperatura alta en Tanque A1</span>
-                  <span className="text-muted-foreground">Hace 5 min</span>
-                </div>
-                <div className="flex items-center">
-                  <div className="w-2 h-2 bg-yellow-500 rounded-full mr-2"></div>
-                  <span className="flex-1">Nivel de pH fuera de rango en Tanque B3</span>
-                  <span className="text-muted-foreground">Hace 20 min</span>
-                </div>
-                <div className="flex items-center">
-                  <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
-                  <span className="flex-1">Mantenimiento programado para Instalación 2</span>
-                  <span className="text-muted-foreground">En 2 horas</span>
-                </div>
+                {alerts.slice(0, 3).map(alert => (
+                  <div key={alert.id} className="flex items-center">
+                    <div className={`w-2 h-2 rounded-full mr-2 ${
+                      alert.priority === 'HIGH' ? 'bg-red-500' :
+                      alert.priority === 'MEDIUM' ? 'bg-yellow-500' : 'bg-green-500'
+                    }`}></div>
+                    <span className="flex-1">{alert.description}</span>
+                    <span className="text-muted-foreground">{alert.status}</span>
+                  </div>
+                ))}
               </div>
             </CardContent>
           </Card>
@@ -189,19 +248,20 @@ export default function Dashboard() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="font-medium">Tanque A1</h3>
-                    <p className="text-sm text-muted-foreground">Capacidad: 100L</p>
+                {tanks.slice(0, 3).map(tank => (
+                  <div key={tank.id} className="flex items-center justify-between">
+                    <div>
+                      <h3 className="font-medium">{tank.name}</h3>
+                      <p className="text-sm text-muted-foreground">Capacidad: {tank.capacity}L</p>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Thermometer className="h-4 w-4 text-muted-foreground" />
+                      <span>--°C</span>
+                      <Droplet className="h-4 w-4 text-muted-foreground" />
+                      <span>pH --</span>
+                    </div>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <Thermometer className="h-4 w-4 text-muted-foreground" />
-                    <span>23°C</span>
-                    <Droplet className="h-4 w-4 text-muted-foreground" />
-                    <span>pH 7.2</span>
-                  </div>
-                </div>
-                <Progress value={80} />
+                ))}
               </div>
             </CardContent>
           </Card>
@@ -211,16 +271,18 @@ export default function Dashboard() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                <div className="flex items-center space-x-4">
-                  <Avatar>
-                    <AvatarImage src="/placeholder.svg?height=40&width=40" alt="Ajolote" />
-                    <AvatarFallback>AX</AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <h3 className="font-medium">Ajolote #123</h3>
-                    <p className="text-sm text-muted-foreground">Edad: 2 años | Salud: Excelente</p>
+                {axolotls.slice(0, 3).map(axolotl => (
+                  <div key={axolotl.id} className="flex items-center space-x-4">
+                    <Avatar>
+                      <AvatarImage src="/placeholder.svg?height=40&width=40" alt="Ajolote" />
+                      <AvatarFallback>AX</AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <h3 className="font-medium">{axolotl.name}</h3>
+                      <p className="text-sm text-muted-foreground">Edad: {axolotl.age} años | Salud: {axolotl.health}</p>
+                    </div>
                   </div>
-                </div>
+                ))}
               </div>
             </CardContent>
           </Card>
