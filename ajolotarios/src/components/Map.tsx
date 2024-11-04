@@ -25,33 +25,54 @@ interface MapProps {
 
 const Map: React.FC<MapProps> = ({ ajolotaries }) => {
   const [geocodedAjolotaries, setGeocodedAjolotaries] = useState<GeocodedAjolotary[]>([])
+  const [loading, setLoading] = useState<boolean>(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     const fetchGeocodes = async () => {
-      const geocoded = await Promise.all(
-        ajolotaries.map(async (ajolotary) => {
-          try {
-            const res = await fetch(`/api/geocode?address=${encodeURIComponent(ajolotary.location)}`)
-            const data = await res.json()
-            if (res.ok) {
-              return { ...ajolotary, lat: data.lat, lon: data.lon }
-            } else {
-              console.error(`Geocoding error for ${ajolotary.name}:`, data.error)
+      try {
+        const geocoded = await Promise.all(
+          ajolotaries.map(async (ajolotary) => {
+            try {
+              const res = await fetch(`/api/geocode?address=${encodeURIComponent(ajolotary.location)}`)
+              const data = await res.json()
+              if (res.ok && data.lat && data.lon) {
+                return { ...ajolotary, lat: data.lat, lon: data.lon }
+              } else {
+                console.error(`Geocoding error for ${ajolotary.name}:`, data.error)
+                return null
+              }
+            } catch (error) {
+              console.error(`Error fetching geocode for ${ajolotary.name}:`, error)
               return null
             }
-          } catch (error) {
-            console.error(`Error fetching geocode for ${ajolotary.name}:`, error)
-            return null
-          }
-        })
-      )
-      setGeocodedAjolotaries(geocoded.filter(Boolean) as GeocodedAjolotary[])
+          })
+        )
+        setGeocodedAjolotaries(geocoded.filter(Boolean) as GeocodedAjolotary[])
+      } catch (err: any) {
+        console.error('Error fetching geocodes:', err)
+        setError('Error al obtener las coordenadas de las ubicaciones.')
+      } finally {
+        setLoading(false)
+      }
     }
 
-    fetchGeocodes()
+    if (ajolotaries.length > 0) {
+      fetchGeocodes()
+    } else {
+      setLoading(false)
+    }
   }, [ajolotaries])
 
   const defaultPosition: [number, number] = [19.4326, -99.1332] // Coordenadas de ejemplo (Ciudad de México)
+
+  if (loading) {
+    return <div className="flex items-center justify-center h-full">Cargando mapa...</div>
+  }
+
+  if (error) {
+    return <div className="text-red-500">Error: {error}</div>
+  }
 
   return (
     <MapContainer center={defaultPosition} zoom={5} scrollWheelZoom={false} className="h-full w-full">
