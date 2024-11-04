@@ -227,12 +227,6 @@ export default function Dashboard() {
                         <h3 className="font-medium">{tank.name}</h3>
                         <p className="text-sm text-muted-foreground">Capacidad: {tank.capacity}L</p>
                       </div>
-                      <div className="flex items-center space-x-2">
-                        <Thermometer className="h-4 w-4 text-muted-foreground" />
-                        <span>--°C</span>
-                        <Droplet className="h-4 w-4 text-muted-foreground" />
-                        <span>pH --</span>
-                      </div>
                     </div>
                   ))}
                 </div>
