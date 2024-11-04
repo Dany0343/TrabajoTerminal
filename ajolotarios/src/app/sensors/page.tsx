@@ -60,7 +60,7 @@ type Device = {
 type SensorType = {
   id: number;
   name: string;
-  magnitude: string; // Nueva propiedad
+  magnitude: string;
 };
 
 export default function SensorsPage() {

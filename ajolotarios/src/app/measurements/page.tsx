@@ -81,7 +81,6 @@ type Sensor = {
   serialNumber: string;
   typeId: number;
   statusId: number;
-  magnitude: string;
   type?: SensorType;
   status?: SensorStatus;
 };
@@ -89,6 +88,7 @@ type Sensor = {
 type SensorType = {
   id: number;
   name: string;
+  magnitude: string;
 };
 
 type SensorStatus = {
