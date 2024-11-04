@@ -1,45 +1,27 @@
+// src/app/dashboard/page.tsx
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Bell, MessageSquare, User, LogOut, Settings, HelpCircle, Plus, Edit, Activity, Thermometer, Droplet } from 'lucide-react'
+import { Bell, Plus, Edit, Activity, Thermometer, Droplet } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Progress } from "@/components/ui/progress"
+import dynamic from 'next/dynamic'
+import LoadingSpinner from '@/components/LoadingSpinner' 
+import ParameterTrendsChart from '@/components/ParameterTrendsChart'
 
-interface Ajolotary {
-  id: number
-  name: string
-  location: string
-}
+import { Ajolotary, Tank, Axolotl, Alert } from '@/types'
 
-interface Tank {
-  id: number
-  name: string
-  capacity: number
-  status: string
-}
-
-interface Axolotl {
-  id: number
-  name: string
-  age: number
-  health: string
-}
-
-interface Alert {
-  id: number
-  alertType: string
-  description: string
-  priority: string
-  status: string
-}
+const Map = dynamic(() => import('@/components/Map'), { ssr: false, loading: () => <LoadingSpinner /> })
 
 export default function Dashboard() {
   const [ajolotaries, setAjolotaries] = useState<Ajolotary[]>([])
   const [tanks, setTanks] = useState<Tank[]>([])
   const [axolotls, setAxolotls] = useState<Axolotl[]>([])
   const [alerts, setAlerts] = useState<Alert[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     const fetchData = async () => {
@@ -51,17 +33,26 @@ export default function Dashboard() {
           fetch('/api/alerts')
         ])
 
-        const ajolotariesData = await ajolotariesRes.json()
-        const tanksData = await tanksRes.json()
-        const axolotlsData = await axolotlsRes.json()
-        const alertsData = await alertsRes.json()
+        if (!ajolotariesRes.ok || !tanksRes.ok || !axolotlsRes.ok || !alertsRes.ok) {
+          throw new Error('Error al obtener los datos')
+        }
+
+        const [ajolotariesData, tanksData, axolotlsData, alertsData] = await Promise.all([
+          ajolotariesRes.json(),
+          tanksRes.json(),
+          axolotlsRes.json(),
+          alertsRes.json()
+        ])
 
         setAjolotaries(ajolotariesData)
         setTanks(tanksData)
         setAxolotls(axolotlsData)
         setAlerts(alertsData)
-      } catch (error) {
-        console.error('Error fetching data:', error)
+      } catch (err: any) {
+        console.error('Error fetching data:', err)
+        setError(err.message || 'Error desconocido')
+      } finally {
+        setLoading(false)
       }
     }
 
@@ -70,6 +61,14 @@ export default function Dashboard() {
 
   const activeTanks = tanks.filter(tank => tank.status === 'ACTIVE')
   const criticalAlerts = alerts.filter(alert => alert.priority === 'HIGH' && alert.status === 'PENDING')
+
+  if (loading) {
+    return <LoadingSpinner />
+  }
+
+  if (error) {
+    return <div className="text-red-500">Error: {error}</div>
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -81,18 +80,7 @@ export default function Dashboard() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Instalaciones</CardTitle>
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                className="h-4 w-4 text-muted-foreground"
-              >
-                <path d="M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4z" />
-              </svg>
+              <Bell className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{ajolotaries.length}</div>
@@ -102,18 +90,7 @@ export default function Dashboard() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Tanques Activos</CardTitle>
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                className="h-4 w-4 text-muted-foreground"
-              >
-                <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
-              </svg>
+              <Thermometer className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{activeTanks.length}</div>
@@ -123,20 +100,10 @@ export default function Dashboard() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Ajolotes Registrados</CardTitle>
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                className="h-4 w-4 text-muted-foreground"
-              >
-                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-                <circle cx="9" cy="7" r="4" />
-                <path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
-              </svg>
+              <Avatar className="h-4 w-4">
+                <AvatarImage src="/placeholder.svg" alt="Ajolote" />
+                <AvatarFallback>AX</AvatarFallback>
+              </Avatar>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{axolotls.length}</div>
@@ -146,18 +113,7 @@ export default function Dashboard() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Alertas Activas</CardTitle>
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                className="h-4 w-4 text-muted-foreground"
-              >
-                <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
-              </svg>
+              <Bell className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{criticalAlerts.length}</div>
@@ -168,29 +124,23 @@ export default function Dashboard() {
 
         {/* Charts and Map */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7 mb-6">
-          <Card className="col-span-4">
-            <CardHeader>
-              <CardTitle>Tendencias de Parámetros Ambientales</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="h-[200px]">
-                {/* Aquí iría el componente de gráfico real */}
-                <div className="flex items-center justify-center h-full bg-muted rounded-md">
-                  Gráfico de Tendencias (Implementar con datos reales)
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+        <Card className="col-span-4">
+          <CardHeader>
+            <CardTitle>Tendencias de Parámetros Ambientales</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {/* Supongamos que tienes una API para obtener mediciones por parámetro */}
+            <ParameterTrendsChart parameterName="Temperatura" measurements={[]} />
+            {/* Implementa la lógica para obtener y pasar las mediciones reales */}
+          </CardContent>
+        </Card>
           <Card className="col-span-3">
             <CardHeader>
               <CardTitle>Mapa de Instalaciones</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="h-[200px]">
-                {/* Aquí iría el componente de mapa real */}
-                <div className="flex items-center justify-center h-full bg-muted rounded-md">
-                  Mapa Interactivo (Implementar con ubicaciones reales)
-                </div>
+              <div className="h-[400px]">
+                <Map ajolotaries={ajolotaries} />
               </div>
             </CardContent>
           </Card>
@@ -211,7 +161,7 @@ export default function Dashboard() {
                       alert.priority === 'MEDIUM' ? 'bg-yellow-500' : 'bg-green-500'
                     }`}></div>
                     <span className="flex-1">{alert.description}</span>
-                    <span className="text-muted-foreground">{alert.status}</span>
+                    <span className="text-xs text-muted-foreground">{alert.status}</span>
                   </div>
                 ))}
               </div>
@@ -274,7 +224,7 @@ export default function Dashboard() {
                 {axolotls.slice(0, 3).map(axolotl => (
                   <div key={axolotl.id} className="flex items-center space-x-4">
                     <Avatar>
-                      <AvatarImage src="/placeholder.svg?height=40&width=40" alt="Ajolote" />
+                      <AvatarImage src="/placeholder.svg" alt="Ajolote" />
                       <AvatarFallback>AX</AvatarFallback>
                     </Avatar>
                     <div>
