@@ -24,7 +24,7 @@ const MeasurementHistory: React.FC<MeasurementHistoryProps> = ({ measurements })
         </thead>
         <tbody>
           {sortedMeasurements.map(measurement => {
-            console.log(`La medida es: ${measurement}`);
+            console.log(`La medida es: ${measurement.parameterName}, ${measurement.value}, ${measurement.dateTime}`);
             return (
               <tr key={measurement.id} className="hover:bg-gray-100 dark:hover:bg-gray-700">
                 <td className="py-2 px-4 border-b">{new Date(measurement.dateTime).toLocaleString()}</td>
