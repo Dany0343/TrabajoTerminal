@@ -66,9 +66,10 @@ enum TankStatus {
 
 // Modelo de Tipo de Sensor
 model SensorType {
-  id       Int       @id @default(autoincrement())
-  name     String    @unique
-  sensors  Sensor[]
+  id        Int       @id @default(autoincrement())
+  name      String    @unique
+  magnitude String    @db.VarChar(50)
+  sensors   Sensor[]
 }
 
 // enum de Estado de Sensor
@@ -83,7 +84,6 @@ model Sensor {
   model             String          @db.VarChar(50)
   serialNumber      String          @unique @db.VarChar(50)
   lastConnection    DateTime        @default(now())
-  magnitude         String          @db.VarChar(50)
   typeId            Int
   deviceId          Int
   calibratedAt      DateTime        @default(now())

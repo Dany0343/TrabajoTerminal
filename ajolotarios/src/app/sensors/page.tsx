@@ -35,7 +35,6 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Textarea } from '@/components/ui/textarea';
 
 type SensorStatus = 'ACTIVE' | 'INACTIVE' | 'FAULTY' | 'CALIBRATING';
 
@@ -43,7 +42,6 @@ type Sensor = {
   id: number;
   model: string;
   serialNumber: string;
-  magnitude: string;
   typeId: number;
   status: SensorStatus;
   deviceId: number;
@@ -62,6 +60,7 @@ type Device = {
 type SensorType = {
   id: number;
   name: string;
+  magnitude: string; // Nueva propiedad
 };
 
 export default function SensorsPage() {
@@ -74,7 +73,6 @@ export default function SensorsPage() {
   >({
     model: '',
     serialNumber: '',
-    magnitude: '',
     typeId: 0,
     status: 'ACTIVE',
     deviceId: 0,
@@ -91,6 +89,7 @@ export default function SensorsPage() {
   const [newSensorType, setNewSensorType] = useState<SensorType>({
     id: 0,
     name: '',
+    magnitude: '', // Inicializar magnitud
   });
   const [editingSensorType, setEditingSensorType] = useState<SensorType | null>(null);
 
@@ -129,7 +128,6 @@ export default function SensorsPage() {
     if (
       !newSensor.model ||
       !newSensor.serialNumber ||
-      !newSensor.magnitude ||
       !newSensor.typeId ||
       !newSensor.status ||
       !newSensor.deviceId
@@ -152,7 +150,6 @@ export default function SensorsPage() {
         setNewSensor({
           model: '',
           serialNumber: '',
-          magnitude: '',
           typeId: 0,
           status: 'ACTIVE',
           deviceId: 0,
@@ -189,7 +186,6 @@ export default function SensorsPage() {
           setNewSensor({
             model: '',
             serialNumber: '',
-            magnitude: '',
             typeId: 0,
             status: 'ACTIVE',
             deviceId: 0,
@@ -212,7 +208,6 @@ export default function SensorsPage() {
     setNewSensor({
       model: sensor.model,
       serialNumber: sensor.serialNumber,
-      magnitude: sensor.magnitude,
       typeId: sensor.typeId,
       status: sensor.status,
       deviceId: sensor.deviceId,
@@ -263,8 +258,8 @@ export default function SensorsPage() {
   // Funciones CRUD para SensorType
 
   const addSensorType = async () => {
-    if (!newSensorType.name) {
-      alert('El nombre del tipo de sensor es obligatorio');
+    if (!newSensorType.name || !newSensorType.magnitude) {
+      alert('El nombre y la magnitud del tipo de sensor son obligatorios');
       return;
     }
 
@@ -272,12 +267,15 @@ export default function SensorsPage() {
       const response = await fetch('/api/sensor-types', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: newSensorType.name }),
+        body: JSON.stringify({ 
+          name: newSensorType.name, 
+          magnitude: newSensorType.magnitude 
+        }),
       });
       if (response.ok) {
         const createdType = await response.json();
         setSensorTypes([...sensorTypes, createdType]);
-        setNewSensorType({ id: 0, name: '' });
+        setNewSensorType({ id: 0, name: '', magnitude: '' });
         alert('Tipo de sensor agregado exitosamente');
       } else {
         const errorText = await response.text();
@@ -290,8 +288,8 @@ export default function SensorsPage() {
   };
 
   const updateSensorType = async () => {
-    if (!editingSensorType || !editingSensorType.name) {
-      alert('El nombre del tipo de sensor es obligatorio');
+    if (!editingSensorType || !editingSensorType.name || !editingSensorType.magnitude) {
+      alert('El nombre y la magnitud del tipo de sensor son obligatorios');
       return;
     }
 
@@ -299,7 +297,10 @@ export default function SensorsPage() {
       const response = await fetch(`/api/sensor-types/${editingSensorType.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: editingSensorType.name }),
+        body: JSON.stringify({ 
+          name: editingSensorType.name, 
+          magnitude: editingSensorType.magnitude 
+        }),
       });
       if (response.ok) {
         const updatedType = await response.json();
@@ -307,7 +308,7 @@ export default function SensorsPage() {
           sensorTypes.map((type) => (type.id === updatedType.id ? updatedType : type))
         );
         setEditingSensorType(null);
-        setNewSensorType({ id: 0, name: '' });
+        setNewSensorType({ id: 0, name: '', magnitude: '' });
         alert('Tipo de sensor actualizado exitosamente');
       } else {
         const errorText = await response.text();
@@ -477,16 +478,6 @@ export default function SensorsPage() {
                     className="col-span-3"
                   />
                 </div>
-                {/* Magnitud */}
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="magnitude" className="text-right">Magnitud</Label>
-                  <Input
-                    id="magnitude"
-                    value={newSensor.magnitude}
-                    onChange={(e) => setNewSensor({ ...newSensor, magnitude: e.target.value })}
-                    className="col-span-3"
-                  />
-                </div>
                 {/* Tipo de Sensor */}
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="typeId" className="text-right">Tipo de Sensor</Label>
@@ -500,7 +491,7 @@ export default function SensorsPage() {
                     <SelectContent>
                       {sensorTypes.map((type) => (
                         <SelectItem key={type.id} value={type.id.toString()}>
-                          {type.name}
+                          {type.name} - {type.magnitude} {/* Mostrar magnitud */}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -602,6 +593,7 @@ export default function SensorsPage() {
                     <TableRow>
                       <TableHead>ID</TableHead>
                       <TableHead>Nombre</TableHead>
+                      <TableHead>Magnitud</TableHead> {/* Nueva columna */}
                       <TableHead>Acciones</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -610,6 +602,7 @@ export default function SensorsPage() {
                       <TableRow key={type.id}>
                         <TableCell>{type.id}</TableCell>
                         <TableCell>{type.name}</TableCell>
+                        <TableCell>{type.magnitude}</TableCell> {/* Mostrar magnitud */}
                         <TableCell>
                           <div className="flex space-x-2">
                             <Button
@@ -652,6 +645,20 @@ export default function SensorsPage() {
                         }
                       />
                     </div>
+                    {/* Campo para Magnitud */}
+                    <div>
+                      <Label htmlFor="sensorTypeMagnitude">Magnitud</Label>
+                      <Input
+                        id="sensorTypeMagnitude"
+                        type="text"
+                        value={editingSensorType ? editingSensorType.magnitude : newSensorType.magnitude}
+                        onChange={(e) =>
+                          editingSensorType
+                            ? setEditingSensorType({ ...editingSensorType, magnitude: e.target.value })
+                            : setNewSensorType({ ...newSensorType, magnitude: e.target.value })
+                        }
+                      />
+                    </div>
                     <div className="flex space-x-2">
                       <Button
                         onClick={editingSensorType ? updateSensorType : addSensorType}
@@ -663,7 +670,7 @@ export default function SensorsPage() {
                           variant="ghost"
                           onClick={() => {
                             setEditingSensorType(null);
-                            setNewSensorType({ id: 0, name: '' });
+                            setNewSensorType({ id: 0, name: '', magnitude: '' });
                           }}
                         >
                           Cancelar
@@ -787,7 +794,7 @@ export default function SensorsPage() {
           <TableRow>
             <TableHead>Modelo</TableHead>
             <TableHead>Número de Serie</TableHead>
-            <TableHead>Magnitud</TableHead>
+            <TableHead>Magnitud</TableHead> {/* Magnitud desde SensorType */}
             <TableHead>Tipo</TableHead>
             <TableHead>Estado</TableHead>
             <TableHead>Dispositivo</TableHead>
@@ -799,10 +806,10 @@ export default function SensorsPage() {
             <TableRow key={sensor.id}>
               <TableCell className="font-medium">{sensor.model}</TableCell>
               <TableCell>{sensor.serialNumber}</TableCell>
-              <TableCell>{sensor.magnitude}</TableCell>
-              <TableCell>{sensor.type?.name || ''}</TableCell>
+              <TableCell>{sensor.type?.magnitude || 'N/A'}</TableCell> {/* Actualizado */}
+              <TableCell>{sensor.type?.name || 'N/A'}</TableCell>
               <TableCell>{getStatusBadge(sensor.status)}</TableCell>
-              <TableCell>{sensor.device?.name || ''}</TableCell>
+              <TableCell>{sensor.device?.name || 'N/A'}</TableCell>
               <TableCell>
                 <div className="flex space-x-2">
                   {/* Botón para Editar Sensor */}
@@ -816,7 +823,6 @@ export default function SensorsPage() {
                         setNewSensor({
                           model: '',
                           serialNumber: '',
-                          magnitude: '',
                           typeId: 0,
                           status: 'ACTIVE',
                           deviceId: 0,
@@ -861,16 +867,7 @@ export default function SensorsPage() {
                             className="col-span-3"
                           />
                         </div>
-                        {/* Magnitud */}
-                        <div className="grid grid-cols-4 items-center gap-4">
-                          <Label htmlFor="magnitude" className="text-right">Magnitud</Label>
-                          <Input
-                            id="magnitude"
-                            value={newSensor.magnitude}
-                            onChange={(e) => setNewSensor({ ...newSensor, magnitude: e.target.value })}
-                            className="col-span-3"
-                          />
-                        </div>
+                        {/* Magnitud: Eliminado */}
                         {/* Tipo de Sensor */}
                         <div className="grid grid-cols-4 items-center gap-4">
                           <Label htmlFor="typeId" className="text-right">Tipo de Sensor</Label>
@@ -884,7 +881,7 @@ export default function SensorsPage() {
                             <SelectContent>
                               {sensorTypes.map((type) => (
                                 <SelectItem key={type.id} value={type.id.toString()}>
-                                  {type.name}
+                                  {type.name} - {type.magnitude} {/* Mostrar magnitud */}
                                 </SelectItem>
                               ))}
                             </SelectContent>
