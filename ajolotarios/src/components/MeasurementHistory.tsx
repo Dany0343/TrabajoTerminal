@@ -23,13 +23,16 @@ const MeasurementHistory: React.FC<MeasurementHistoryProps> = ({ measurements })
           </tr>
         </thead>
         <tbody>
-          {sortedMeasurements.map(measurement => (
-            <tr key={measurement.id} className="hover:bg-gray-100 dark:hover:bg-gray-700">
-              <td className="py-2 px-4 border-b">{new Date(measurement.dateTime).toLocaleString()}</td>
-              <td className="py-2 px-4 border-b">{measurement.value}</td>
-              <td className="py-2 px-4 border-b">{measurement.parameterName}</td>
-            </tr>
-          ))}
+          {sortedMeasurements.map(measurement => {
+            console.log(`La medida es: ${measurement}`);
+            return (
+              <tr key={measurement.id} className="hover:bg-gray-100 dark:hover:bg-gray-700">
+                <td className="py-2 px-4 border-b">{new Date(measurement.dateTime).toLocaleString()}</td>
+                <td className="py-2 px-4 border-b">{measurement.value}</td>
+                <td className="py-2 px-4 border-b">{measurement.parameterName}</td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     </div>

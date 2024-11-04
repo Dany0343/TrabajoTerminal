@@ -37,7 +37,7 @@ export default function Dashboard() {
           fetch('/api/tanks'),
           fetch('/api/axolotls'),
           fetch('/api/alerts'),
-          fetch('/api/measurements') // Nueva API Route para mediciones
+          fetch('/api/measurements') 
         ])
 
         if (!ajolotariesRes.ok || !tanksRes.ok || !axolotlsRes.ok || !alertsRes.ok || !measurementsRes.ok) {
@@ -94,9 +94,6 @@ export default function Dashboard() {
           ajolotaries={ajolotaries} 
           onSelect={setSelectedAjolotary} 
         />
-
-        {/* Envolver el contenido que se incluirá en el PDF */}
-        <div id="report-content">
           {/* Summary Cards */}
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-6">
             <Card>
@@ -145,6 +142,7 @@ export default function Dashboard() {
           </div>
 
           {/* Histórico de Mediciones */}
+        <div id="report-content">
           <div className="mb-6">
             <Card>
               <CardHeader>
@@ -158,6 +156,7 @@ export default function Dashboard() {
                 )}
               </CardContent>
             </Card>
+          </div>
           </div>
 
           {/* Charts and Map */}
@@ -200,7 +199,6 @@ export default function Dashboard() {
                 )}
               </CardContent>
             </Card>
-            {/* Simplificar Acciones Rápidas a solo "Generar Informe" */}
             <Card>
               <CardHeader>
                 <CardTitle>Acciones Rápidas</CardTitle>
@@ -274,15 +272,14 @@ export default function Dashboard() {
               </CardContent>
             </Card>
           </div>
-        </div>
-      </main> {/* Cierre del elemento main */}
+      </main>
 
       {/* Footer */}
       <footer className="border-t">
         <div className="container mx-auto flex flex-col items-center justify-between gap-4 py-10 md:h-24 md:flex-row md:py-0">
           <div className="flex flex-col items-center gap-4 px-8 md:flex-row md:gap-2 md:px-0">
             <p className="text-center text-sm leading-loose md:text-left">
-              © 2024 Sistema de Monitoreo de Ajolotes. Todos los derechos reservados.
+              © 2024 AjoloApp. Todos los derechos reservados.
             </p>
           </div>
           <p className="text-center text-sm md:text-left">
@@ -314,6 +311,10 @@ export default function Dashboard() {
       doc.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight)
     })
 
-    doc.save('informe-ajolotarios.pdf')
+    // fecha de hoy
+    const today = new Date()
+    let nombreArchivo = `informe-ajolotarios-${today.getFullYear()}-${today.getMonth() + 1}-${today.getDate()}.pdf`
+
+    doc.save(nombreArchivo)
   }
 }
