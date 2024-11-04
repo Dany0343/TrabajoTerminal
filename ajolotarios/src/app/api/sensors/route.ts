@@ -31,7 +31,6 @@ export async function POST(request: Request) {
       status, 
       deviceId,
       calibratedAt,
-      nextCalibrationAt,
     } = data;
 
     // Validación de campos requeridos
@@ -44,7 +43,6 @@ export async function POST(request: Request) {
         model,
         serialNumber,
         lastConnection: lastConnection ? new Date(lastConnection) : undefined,
-        magnitude,
         typeId,
         deviceId,
         status,
