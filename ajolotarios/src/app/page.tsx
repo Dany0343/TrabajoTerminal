@@ -306,6 +306,11 @@ export default function Dashboard() {
       doc.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight)
     })
 
-    doc.save('informe-ajolotarios.pdf')
+    // Sacar fecha del dia
+    const today = new Date()
+    const date = `${today.getFullYear()}-${today.getMonth() + 1}-${today.getDate()}`
+    const nombre = `informe-ajolotarios-${date}.pdf`
+
+    doc.save(nombre)
   }
 }
