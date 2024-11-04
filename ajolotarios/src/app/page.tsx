@@ -276,11 +276,6 @@ export default function Dashboard() {
               © 2024 AjoloApp. Todos los derechos reservados.
             </p>
           </div>
-          <p className="text-center text-sm md:text-left">
-            <a href="#" className="font-medium underline underline-offset-4">Términos</a> |{" "}
-            <a href="#" className="font-medium underline underline-offset-4">Privacidad</a> |{" "}
-            <a href="#" className="font-medium underline underline-offset-4">Contacto</a>
-          </p>
         </div>
       </footer>
     </div>
