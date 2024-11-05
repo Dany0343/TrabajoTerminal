@@ -1,10 +1,11 @@
 // components/AuthenticatedHeader.jsx
 "use client";
 
+import { useState } from 'react';
 import Image from "next/image";
-import { Bell, MessageSquare, User, LogOut } from 'lucide-react'
-import { Button } from "@/components/ui/button"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Bell, MessageSquare, User, LogOut, Menu } from 'lucide-react';
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,56 +13,77 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import Link from 'next/link'
+} from "@/components/ui/dropdown-menu";
+import Link from 'next/link';
 
 const AuthenticatedHeader = () => {
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  const toggleMobileMenu = () => {
+    setIsMobileMenuOpen(!isMobileMenuOpen);
+  };
+
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container mx-auto flex h-14 items-center">
+      <div className="container mx-auto flex h-14 items-center justify-between">
+        {/* Sección de Logo y Navegación en Pantallas Grandes */}
         <div className="mr-4 hidden md:flex">
           <a className="mr-6 flex items-center space-x-2" href="/">
-          <Image
-            src="/logoAjolotarios.jpeg"
-            width={30}
-            height={30}
-            alt="Double point"
+            <Image
+              src="/logoAjolotarios.jpeg"
+              width={30}
+              height={30}
+              alt="Double point"
             />
             <span className="hidden font-bold sm:inline-block">AjoloApp</span>
           </a>
           <nav className="flex items-center space-x-6 text-sm font-medium">
-            <a className="transition-colors hover:text-foreground/80 text-foreground" href="/">Inicio</a>
-            <Link className="transition-colors hover:text-foreground/80 text-foreground/60" href="/ajolotaries">Ajolotarios</Link>
-            <Link className="transition-colors hover:text-foreground/80 text-foreground/60 font-semibold" href={"/tanks"}>
-            Tanques
-          </Link>
-            <Link className="transition-colors hover:text-foreground/80 text-foreground/60 font-semibold" href={"/axolotls"}>
-            Ajolotes
-          </Link>
-          <Link className="transition-colors hover:text-foreground/80 text-foreground/60 font-semibold" href={"/alerts"}>
-            Alertas
-          </Link>
-          <Link className="transition-colors hover:text-foreground/80 text-foreground/60 font-semibold" href={"/measurements"}>
-            Medidas
-          </Link>
-          <Link className="transition-colors hover:text-foreground/80 text-foreground/60 font-semibold" href={"/sensors"}>
-            Sensores
-          </Link>
+            <Link href="/" className="transition-colors hover:text-foreground/80 text-foreground">
+              Inicio
+            </Link>
+            <Link href="/ajolotaries" className="transition-colors hover:text-foreground/80 text-foreground/60">
+              Ajolotarios
+            </Link>
+            <Link href="/tanks" className="transition-colors hover:text-foreground/80 text-foreground/60 font-semibold">
+              Tanques
+            </Link>
+            <Link href="/axolotls" className="transition-colors hover:text-foreground/80 text-foreground/60 font-semibold">
+              Ajolotes
+            </Link>
+            <Link href="/alerts" className="transition-colors hover:text-foreground/80 text-foreground/60 font-semibold">
+              Alertas
+            </Link>
+            <Link href="/measurements" className="transition-colors hover:text-foreground/80 text-foreground/60 font-semibold">
+              Medidas
+            </Link>
+            <Link href="/sensors" className="transition-colors hover:text-foreground/80 text-foreground/60 font-semibold">
+              Sensores
+            </Link>
           </nav>
         </div>
-        <div className="flex flex-1 items-center justify-between space-x-2 md:justify-end">
-          {/* <div className="w-full flex-1 md:w-auto md:flex-none">
-            <Button variant="outline" className="relative h-8 w-full justify-start text-sm font-normal md:w-40 md:flex">
-              <span className="hidden lg:inline-flex">Buscar...</span>
-              <kbd className="pointer-events-none absolute right-1.5 top-1.5 hidden h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100 sm:flex">
-                <span className="text-xs">⌘</span>K
-              </kbd>
-            </Button>
-          </div> */}
-          <Button size="icon" variant="ghost">
+
+        {/* Botones y Avatar */}
+        <div className="flex items-center space-x-2">
+          {/* Botón de Notificaciones */}
+          <Button size="icon" variant="ghost" className="hidden md:inline-flex">
             <Bell className="h-4 w-4" />
             <span className="sr-only">Notificaciones</span>
           </Button>
+
+          {/* Menú Hamburguesa para Pantallas Pequeñas */}
+          <Button
+            size="icon"
+            variant="ghost"
+            className="md:hidden"
+            onClick={toggleMobileMenu}
+            aria-label="Abrir menú de navegación"
+            aria-expanded={isMobileMenuOpen}
+          >
+            <Menu className="h-4 w-4" />
+            <span className="sr-only">Abrir menú</span>
+          </Button>
+
+          {/* Dropdown de Usuario */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="relative h-8 w-8 rounded-full">
@@ -93,8 +115,77 @@ const AuthenticatedHeader = () => {
           </DropdownMenu>
         </div>
       </div>
-    </header>
 
+      {/* Menú Móvil */}
+      {isMobileMenuOpen && (
+        <>
+          {/* Overlay para cerrar el menú al hacer clic fuera */}
+          <div
+            className="md:hidden fixed inset-0 bg-black opacity-50 z-30"
+            onClick={toggleMobileMenu}
+          ></div>
+
+          {/* Menú Desplegable con Animaciones */}
+          <div
+            className={`md:hidden fixed top-14 left-0 w-full bg-background border-b z-40 transform ${
+              isMobileMenuOpen ? 'translate-y-0' : '-translate-y-full'
+            } transition-transform duration-300`}
+          >
+            <nav className="flex flex-col space-y-2 p-4">
+              <Link
+                href="/"
+                className="transition-colors hover:text-foreground/80 text-foreground"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                Inicio
+              </Link>
+              <Link
+                href="/ajolotaries"
+                className="transition-colors hover:text-foreground/80 text-foreground/60"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                Ajolotarios
+              </Link>
+              <Link
+                href="/tanks"
+                className="transition-colors hover:text-foreground/80 text-foreground/60"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                Tanques
+              </Link>
+              <Link
+                href="/axolotls"
+                className="transition-colors hover:text-foreground/80 text-foreground/60"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                Ajolotes
+              </Link>
+              <Link
+                href="/alerts"
+                className="transition-colors hover:text-foreground/80 text-foreground/60"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                Alertas
+              </Link>
+              <Link
+                href="/measurements"
+                className="transition-colors hover:text-foreground/80 text-foreground/60"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                Medidas
+              </Link>
+              <Link
+                href="/sensors"
+                className="transition-colors hover:text-foreground/80 text-foreground/60"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                Sensores
+              </Link>
+            </nav>
+          </div>
+        </>
+      )}
+    </header>
   );
 };
 
