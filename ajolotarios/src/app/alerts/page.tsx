@@ -568,25 +568,6 @@ export default function AlertsPage() {
         </div>
       </div>
 
-      {/* Paginación */}
-      <div className="flex justify-end items-center space-x-2 mb-4">
-        <Button
-          disabled={filters.page === 1}
-          onClick={() => handlePageChange(filters.page - 1)}
-        >
-          Anterior
-        </Button>
-        <span>
-          Página {filters.page} de {totalPages}
-        </span>
-        <Button
-          disabled={filters.page === totalPages}
-          onClick={() => handlePageChange(filters.page + 1)}
-        >
-          Siguiente
-        </Button>
-      </div>
-
       {/* Diálogo para Agregar/Editar */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent>
