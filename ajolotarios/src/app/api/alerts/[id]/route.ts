@@ -3,7 +3,6 @@
 import { NextResponse } from 'next/server';
 import db from '@/lib/db';
 
-
 export async function GET(
   request: Request,
   { params }: { params: { id: string } }
@@ -13,6 +12,7 @@ export async function GET(
       where: { id: Number(params.id) },
       include: {
         measurement: true,
+        resolver: true, // Incluir el resolver
       },
     });
     if (!alert) {
@@ -31,9 +31,39 @@ export async function PUT(
 ) {
   try {
     const data = await request.json();
+    const {
+      measurementId,
+      alertType,
+      description,
+      priority,
+      status,
+      resolvedAt,
+      resolvedBy,
+      notes,
+    } = data;
+
+    // Validación de campos requeridos
+    if (!measurementId || !alertType || !description || !priority) {
+      return new NextResponse('Faltan campos requeridos', { status: 400 });
+    }
+
+    // Validación adicional si el estado es RESOLVED
+    if (status === 'RESOLVED' && !resolvedBy) {
+      return new NextResponse('resolvedBy es requerido cuando el estado es RESOLVED', { status: 400 });
+    }
+
     const updatedAlert = await db.alert.update({
       where: { id: Number(params.id) },
-      data,
+      data: {
+        measurementId,
+        alertType,
+        description,
+        priority,
+        status,
+        resolvedAt: resolvedAt ? new Date(resolvedAt) : undefined,
+        resolvedBy,
+        notes,
+      },
     });
     return NextResponse.json(updatedAlert);
   } catch (error) {

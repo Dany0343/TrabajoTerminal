@@ -8,6 +8,7 @@ export async function GET() {
     const alerts = await db.alert.findMany({
       include: {
         measurement: true,
+        resolver: true, // Incluir el resolver
       },
     });
     return NextResponse.json(alerts);
@@ -26,11 +27,19 @@ export async function POST(request: Request) {
       description,
       priority,
       status,
+      resolvedAt,
+      resolvedBy,
+      notes,
     } = data;
 
     // Validación de campos requeridos
     if (!measurementId || !alertType || !description || !priority) {
       return new NextResponse('Faltan campos requeridos', { status: 400 });
+    }
+
+    // Validación adicional si el estado es RESOLVED
+    if (status === 'RESOLVED' && !resolvedBy) {
+      return new NextResponse('resolvedBy es requerido cuando el estado es RESOLVED', { status: 400 });
     }
 
     const alert = await db.alert.create({
@@ -40,6 +49,9 @@ export async function POST(request: Request) {
         description,
         priority,
         status: status || 'PENDING',
+        resolvedAt: resolvedAt ? new Date(resolvedAt) : undefined,
+        resolvedBy,
+        notes,
       },
     });
 

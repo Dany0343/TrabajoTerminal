@@ -59,6 +59,9 @@ type Alert = {
 
 type Measurement = {
   id: number;
+  device: Device;
+  sensor: Sensor;
+  dateTime: string; // Asegúrate de que dateTime esté incluido
   // Otros campos según tu modelo
 };
 
@@ -66,6 +69,23 @@ type User = {
   id: number;
   firstName: string;
   lastName: string;
+};
+
+type Device = {
+  id: number;
+  name: string;
+  // Otros campos según tu modelo
+};
+
+type Sensor = {
+  id: number;
+  type: SensorType;
+  // Otros campos según tu modelo
+};
+
+type SensorType = {
+  id: number;
+  name: string;
 };
 
 export default function AlertsPage() {
@@ -117,11 +137,13 @@ export default function AlertsPage() {
     if (formAlert.measurementId === 0) {
       errors.measurementId = "Selecciona una medición.";
     }
-    if (!formAlert.resolvedAt && formAlert.status === "RESOLVED") {
-      errors.resolvedAt = "Selecciona una fecha de resolución.";
-    }
-    if (formAlert.status === "RESOLVED" && !formAlert.resolvedBy) {
-      errors.resolvedBy = "Selecciona quién resolvió la alerta.";
+    if (formAlert.status === "RESOLVED") {
+      if (!formAlert.resolvedAt) {
+        errors.resolvedAt = "Selecciona una fecha de resolución.";
+      }
+      if (!formAlert.resolvedBy) {
+        errors.resolvedBy = "Selecciona quién resolvió la alerta.";
+      }
     }
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
@@ -261,6 +283,12 @@ export default function AlertsPage() {
       default:
         return "bg-gray-500";
     }
+  };
+
+  // Función para formatear la fecha y hora
+  const formatDateTime = (dateTime: string) => {
+    const date = new Date(dateTime);
+    return date.toLocaleString(); // Puedes ajustar la localización según tus necesidades
   };
 
   return (
@@ -449,7 +477,7 @@ export default function AlertsPage() {
                         key={measurement.id}
                         value={measurement.id.toString()}
                       >
-                        Medición {measurement.id}
+                        Medición {measurement.id} - Dispositivo: {measurement.device.name}, Sensor: {measurement.sensor.type.name}, Fecha: {formatDateTime(measurement.dateTime)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -585,7 +613,7 @@ export default function AlertsPage() {
               </TableCell>
               <TableCell>
                 {alert.measurement
-                  ? `Medición ${alert.measurement.id}`
+                  ? `Medición ${alert.measurement.id} - Dispositivo: ${alert.measurement.device.name}, Sensor: ${alert.measurement.sensor.type.name}, Fecha: ${formatDateTime(alert.measurement.dateTime)}`
                   : "N/A"}
               </TableCell>
               <TableCell>
