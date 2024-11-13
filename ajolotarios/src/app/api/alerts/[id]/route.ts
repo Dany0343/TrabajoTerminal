@@ -11,7 +11,16 @@ export async function GET(
     const alert = await db.alert.findUnique({
       where: { id: Number(params.id) },
       include: {
-        measurement: true,
+        measurement: {
+          include: {
+            device: true,
+            sensor: {
+              include: {
+                type: true,
+              },
+            },
+          },
+        },
         resolver: true, // Incluir el resolver
       },
     });
@@ -63,6 +72,19 @@ export async function PUT(
         resolvedAt: resolvedAt ? new Date(resolvedAt) : undefined,
         resolvedBy,
         notes,
+      },
+      include: {
+        measurement: {
+          include: {
+            device: true,
+            sensor: {
+              include: {
+                type: true,
+              },
+            },
+          },
+        },
+        resolver: true,
       },
     });
     return NextResponse.json(updatedAlert);

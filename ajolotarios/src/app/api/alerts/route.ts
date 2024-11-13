@@ -7,7 +7,16 @@ export async function GET() {
   try {
     const alerts = await db.alert.findMany({
       include: {
-        measurement: true,
+        measurement: {
+          include: {
+            device: true,
+            sensor: {
+              include: {
+                type: true,
+              },
+            },
+          },
+        },
         resolver: true, // Incluir el resolver
       },
     });
@@ -52,6 +61,19 @@ export async function POST(request: Request) {
         resolvedAt: resolvedAt ? new Date(resolvedAt) : undefined,
         resolvedBy,
         notes,
+      },
+      include: {
+        measurement: {
+          include: {
+            device: true,
+            sensor: {
+              include: {
+                type: true,
+              },
+            },
+          },
+        },
+        resolver: true,
       },
     });
 

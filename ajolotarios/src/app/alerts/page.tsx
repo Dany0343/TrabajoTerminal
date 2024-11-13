@@ -288,7 +288,13 @@ export default function AlertsPage() {
   // Función para formatear la fecha y hora
   const formatDateTime = (dateTime: string) => {
     const date = new Date(dateTime);
-    return date.toLocaleString(); // Puedes ajustar la localización según tus necesidades
+    return date.toLocaleString('es-ES', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
   };
 
   return (
@@ -477,7 +483,7 @@ export default function AlertsPage() {
                         key={measurement.id}
                         value={measurement.id.toString()}
                       >
-                        Medición {measurement.id} - Dispositivo: {measurement.device.name}, Sensor: {measurement.sensor.type.name}, Fecha: {formatDateTime(measurement.dateTime)}
+                        Medición {measurement.id} - Dispositivo: {measurement.device?.name || 'N/A'}, Sensor: {measurement.sensor?.type?.name || 'N/A'}, Fecha: {formatDateTime(measurement.dateTime)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -613,7 +619,7 @@ export default function AlertsPage() {
               </TableCell>
               <TableCell>
                 {alert.measurement
-                  ? `Medición ${alert.measurement.id} - Dispositivo: ${alert.measurement.device.name}, Sensor: ${alert.measurement.sensor.type.name}, Fecha: ${formatDateTime(alert.measurement.dateTime)}`
+                  ? `Medición ${alert.measurement.id} - Dispositivo: ${alert.measurement.device?.name || 'N/A'}, Sensor: ${alert.measurement.sensor?.type?.name || 'N/A'}, Fecha: ${formatDateTime(alert.measurement.dateTime)}`
                   : "N/A"}
               </TableCell>
               <TableCell>
