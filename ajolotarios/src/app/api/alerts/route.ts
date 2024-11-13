@@ -51,6 +51,20 @@ export async function POST(request: Request) {
       return new NextResponse('resolvedBy es requerido cuando el estado es RESOLVED', { status: 400 });
     }
 
+    // **Nueva Validación: Verificar si ya existe una alerta activa para la medición**
+    const existingActiveAlert = await db.alert.findFirst({
+      where: {
+        measurementId: measurementId,
+        status: {
+          in: ['PENDING', 'ACKNOWLEDGED', 'ESCALATED'],
+        },
+      },
+    });
+
+    if (existingActiveAlert) {
+      return new NextResponse('Ya existe una alerta activa para esta medición.', { status: 400 });
+    }
+
     const alert = await db.alert.create({
       data: {
         measurementId,

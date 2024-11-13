@@ -153,44 +153,55 @@ export default function AlertsPage() {
     if (!validateForm()) {
       return;
     }
-
-    if (isEditing && editingId !== null) {
-      // Actualizar alerta
-      const response = await fetch(`/api/alerts/${editingId}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(formAlert),
-      });
+  
+    try {
+      let response;
+      if (isEditing && editingId !== null) {
+        // Actualizar alerta
+        response = await fetch(`/api/alerts/${editingId}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(formAlert),
+        });
+      } else {
+        // Agregar nueva alerta
+        response = await fetch("/api/alerts", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(formAlert),
+        });
+      }
+  
       if (response.ok) {
-        const updatedAlert = await response.json();
-        setAlerts(
-          alerts.map((alert) => (alert.id === editingId ? updatedAlert : alert))
-        );
+        const updatedOrCreatedAlert = await response.json();
+        if (isEditing) {
+          setAlerts(
+            alerts.map((alert) =>
+              alert.id === editingId ? updatedOrCreatedAlert : alert
+            )
+          );
+        } else {
+          setAlerts([...alerts, updatedOrCreatedAlert]);
+        }
         setIsEditing(false);
         setEditingId(null);
         setIsDialogOpen(false);
+        // Opcional: Mostrar mensaje de éxito
+        alert(isEditing ? "Alerta actualizada exitosamente." : "Alerta agregada exitosamente.");
       } else {
-        console.error("Error al actualizar la alerta");
+        const errorMessage = await response.text();
+        // Mostrar el mensaje de error recibido desde el backend
+        alert(`Error: ${errorMessage}`);
       }
-    } else {
-      // Agregar nueva alerta
-      const response = await fetch("/api/alerts", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(formAlert),
-      });
-      if (response.ok) {
-        const createdAlert = await response.json();
-        setAlerts([...alerts, createdAlert]);
-        setIsDialogOpen(false);
-      } else {
-        console.error("Error al crear la alerta");
-      }
+    } catch (error) {
+      console.error("Error al procesar la alerta:", error);
+      alert("Ocurrió un error inesperado. Por favor, intenta nuevamente.");
     }
+  
     // Restablecer formulario
     setFormAlert({
       measurementId: 0,
@@ -203,7 +214,7 @@ export default function AlertsPage() {
       notes: "",
     });
     setFormErrors({});
-  };
+  };  
 
   const openAddDialog = () => {
     setIsEditing(false);
