@@ -1,7 +1,7 @@
 // app/api/measurements/[id]/route.ts
 
 import { NextResponse } from 'next/server';
-import db from '@/lib/db'
+import db from '@/lib/db';
 
 export async function GET(
   request: Request,
@@ -11,7 +11,11 @@ export async function GET(
     const measurement = await db.measurement.findUnique({
       where: { id: Number(params.id) },
       include: {
-        device: true,
+        device: {
+          include: {
+            tank: true,
+          },
+        },
         sensor: {
           include: {
             type: true,
@@ -41,13 +45,23 @@ export async function PUT(
 ) {
   try {
     const data = await request.json();
-    const {
-      deviceId,
-      sensorId,
-      dateTime,
-      isValid,
-      parameters,
-    } = data;
+    const { deviceId, sensorId, dateTime, isValid, parameters } = data;
+
+    // Validación de campos requeridos
+    if (!deviceId || !sensorId || !parameters) {
+      return new NextResponse('Faltan campos requeridos', { status: 400 });
+    }
+
+    // Validar existencia de dispositivo y sensor
+    const device = await db.device.findUnique({ where: { id: deviceId } });
+    if (!device) {
+      return new NextResponse('Dispositivo no encontrado', { status: 404 });
+    }
+
+    const sensor = await db.sensor.findUnique({ where: { id: sensorId } });
+    if (!sensor) {
+      return new NextResponse('Sensor no encontrado', { status: 404 });
+    }
 
     // Actualizar la medición
     const updatedMeasurement = await db.measurement.update({
@@ -57,7 +71,6 @@ export async function PUT(
         sensorId,
         dateTime: dateTime ? new Date(dateTime) : undefined,
         isValid,
-        // Para actualizar los parámetros, se podrían eliminar los existentes y crear nuevos
         parameters: {
           deleteMany: {}, // Elimina todos los parámetros existentes
           create: parameters.map((param: { parameterId: number; value: number }) => ({
@@ -78,6 +91,7 @@ export async function PUT(
             parameter: true,
           },
         },
+        alerts: true,
       },
     });
 

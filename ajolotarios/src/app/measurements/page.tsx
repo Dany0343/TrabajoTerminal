@@ -1,3 +1,5 @@
+// componente: MeasurementsPage.jsx
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -199,36 +201,115 @@ export default function MeasurementsPage() {
 
   const [editDevice, setEditDevice] = useState<Device | null>(null);
 
-  useEffect(() => {
-    // Obtener mediciones
-    fetch('/api/measurements')
-      .then((res) => res.json())
-      .then((data) => setMeasurements(data))
-      .catch((error) => console.error(error));
+  // Filtros y Paginación
+  const [filters, setFilters] = useState({
+    deviceId: "ALL",
+    sensorId: "ALL",
+    isValid: "ALL",
+    startDate: "",
+    endDate: "",
+    page: 1,
+    limit: 10,
+  });
+  const [totalPages, setTotalPages] = useState(1);
 
+  useEffect(() => {
+    const fetchMeasurements = async () => {
+      try {
+        let url = `/api/measurements?page=${filters.page}&limit=${filters.limit}`;
+
+        if (filters.deviceId !== "ALL") {
+          url += `&deviceId=${filters.deviceId}`;
+        }
+        if (filters.sensorId !== "ALL") {
+          url += `&sensorId=${filters.sensorId}`;
+        }
+        if (filters.isValid !== "ALL") {
+          url += `&isValid=${filters.isValid}`;
+        }
+        if (filters.startDate) {
+          url += `&startDate=${filters.startDate}`;
+        }
+        if (filters.endDate) {
+          url += `&endDate=${filters.endDate}`;
+        }
+
+        const res = await fetch(url);
+        if (!res.ok) {
+          throw new Error('Error al obtener las mediciones');
+        }
+        const data = await res.json();
+        setMeasurements(data.data);
+        setTotalPages(data.totalPages);
+      } catch (error) {
+        console.error(error);
+      }
+    };
+
+    fetchMeasurements();
+  }, [filters]);
+
+  useEffect(() => {
     // Obtener dispositivos
-    fetch('/api/devices')
-      .then((res) => res.json())
-      .then((data) => setDevices(data))
-      .catch((error) => console.error(error));
+    const fetchDevices = async () => {
+      try {
+        const res = await fetch('/api/devices');
+        if (!res.ok) {
+          throw new Error('Error al obtener los dispositivos');
+        }
+        const data = await res.json();
+        setDevices(data);
+      } catch (error) {
+        console.error(error);
+      }
+    };
 
     // Obtener sensores
-    fetch('/api/sensors')
-      .then((res) => res.json())
-      .then((data) => setSensors(data))
-      .catch((error) => console.error(error));
+    const fetchSensors = async () => {
+      try {
+        const res = await fetch('/api/sensors');
+        if (!res.ok) {
+          throw new Error('Error al obtener los sensores');
+        }
+        const data = await res.json();
+        setSensors(data);
+      } catch (error) {
+        console.error(error);
+      }
+    };
 
     // Obtener parámetros
-    fetch('/api/parameters')
-      .then((res) => res.json())
-      .then((data) => setParameters(data))
-      .catch((error) => console.error(error));
+    const fetchParameters = async () => {
+      try {
+        const res = await fetch('/api/parameters');
+        if (!res.ok) {
+          throw new Error('Error al obtener los parámetros');
+        }
+        const data = await res.json();
+        setParameters(data);
+      } catch (error) {
+        console.error(error);
+      }
+    };
 
     // Obtener tanques
-    fetch('/api/tanks')
-      .then((res) => res.json())
-      .then((data) => setTanks(data))
-      .catch((error) => console.error(error));
+    const fetchTanks = async () => {
+      try {
+        const res = await fetch('/api/tanks');
+        if (!res.ok) {
+          throw new Error('Error al obtener los tanques');
+        }
+        const data = await res.json();
+        setTanks(data);
+      } catch (error) {
+        console.error(error);
+      }
+    };
+
+    fetchDevices();
+    fetchSensors();
+    fetchParameters();
+    fetchTanks();
   }, []);
 
   // Validación del formulario
@@ -283,8 +364,8 @@ export default function MeasurementsPage() {
           );
           setSuccessMessage('Medición actualizada exitosamente.');
         } else {
-          const errorData = await response.json();
-          throw new Error(errorData.error || 'Error al actualizar la medición.');
+          const errorMessage = await response.text();
+          throw new Error(errorMessage || 'Error al actualizar la medición.');
         }
       } else {
         // Agregar nueva medición
@@ -298,8 +379,8 @@ export default function MeasurementsPage() {
           setMeasurements([...measurements, createdMeasurement]);
           setSuccessMessage('Medición agregada exitosamente.');
         } else {
-          const errorData = await response.json();
-          throw new Error(errorData.error || 'Error al crear la medición.');
+          const errorMessage = await response.text();
+          throw new Error(errorMessage || 'Error al crear la medición.');
         }
       }
 
@@ -371,8 +452,8 @@ export default function MeasurementsPage() {
         setMeasurements(measurements.filter((measurement) => measurement.id !== id));
         setSuccessMessage('Medición eliminada exitosamente.');
       } else {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Error al eliminar la medición.');
+        const errorMessage = await response.text();
+        throw new Error(errorMessage || 'Error al eliminar la medición.');
       }
     } catch (error: any) {
       console.error(error);
@@ -424,8 +505,8 @@ export default function MeasurementsPage() {
         setIsManageParametersOpen(false);
         setSuccessMessage('Parámetro agregado exitosamente.');
       } else {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Error al agregar el parámetro.');
+        const errorData = await response.text();
+        throw new Error(errorData || 'Error al agregar el parámetro.');
       }
     } catch (error: any) {
       console.error(error);
@@ -456,8 +537,8 @@ export default function MeasurementsPage() {
         setIsManageParametersOpen(false);
         setSuccessMessage('Parámetro actualizado exitosamente.');
       } else {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Error al actualizar el parámetro.');
+        const errorData = await response.text();
+        throw new Error(errorData || 'Error al actualizar el parámetro.');
       }
     } catch (error: any) {
       console.error(error);
@@ -481,8 +562,8 @@ export default function MeasurementsPage() {
         setParameters(parameters.filter((param) => param.id !== id));
         setSuccessMessage('Parámetro eliminado exitosamente.');
       } else {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Error al eliminar el parámetro.');
+        const errorData = await response.text();
+        throw new Error(errorData || 'Error al eliminar el parámetro.');
       }
     } catch (error: any) {
       console.error(error);
@@ -512,8 +593,8 @@ export default function MeasurementsPage() {
         setNewDevice({ id: 0, name: '', serialNumber: '', tankId: 0 });
         setIsManageDevicesOpen(false);
       } else {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Error al agregar el dispositivo.');
+        const errorData = await response.text();
+        throw new Error(errorData || 'Error al agregar el dispositivo.');
       }
     } catch (error: any) {
       console.error(error);
@@ -546,8 +627,8 @@ export default function MeasurementsPage() {
         setEditDevice(null);
         setIsManageDevicesOpen(false);
       } else {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Error al actualizar el dispositivo.');
+        const errorData = await response.text();
+        throw new Error(errorData || 'Error al actualizar el dispositivo.');
       }
     } catch (error: any) {
       console.error(error);
@@ -571,17 +652,14 @@ export default function MeasurementsPage() {
         setDevices(devices.filter((device) => device.id !== id));
         setSuccessMessage('Dispositivo eliminado exitosamente.');
       } else {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Error al eliminar el dispositivo.');
+        const errorData = await response.text();
+        throw new Error(errorData || 'Error al eliminar el dispositivo.');
       }
     } catch (error: any) {
       console.error(error);
       setErrorMessage(error.message || 'Ocurrió un error inesperado.');
     }
   };
-
-  // Funciones para manejar Parámetros y Dispositivos
-  // (Ya incluidas arriba)
 
   // Funciones auxiliares para obtener colores según prioridad y estado
   const getPriorityColor = (priority: "HIGH" | "MEDIUM" | "LOW") => {
@@ -610,6 +688,35 @@ export default function MeasurementsPage() {
       default:
         return "bg-gray-500";
     }
+  };
+
+  const formatDateTime = (dateTime: string) => {
+    const date = new Date(dateTime);
+    return date.toLocaleString('es-ES', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+
+  // Funciones para manejar Filtros y Paginación
+  const handleFilterChange = (e: React.ChangeEvent<HTMLSelectElement | HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFilters((prev) => ({
+      ...prev,
+      [name]: value,
+      page: 1, // Resetear a la primera página al cambiar el filtro
+    }));
+  };
+
+  const handlePageChange = (newPage: number) => {
+    if (newPage < 1 || newPage > totalPages) return;
+    setFilters((prev) => ({
+      ...prev,
+      page: newPage,
+    }));
   };
 
   return (
@@ -644,19 +751,119 @@ export default function MeasurementsPage() {
       </Card>
 
       {/* Sección de Lista de Mediciones */}
-      <div className="flex justify-between items-center mb-4">
+      <div className="flex flex-col md:flex-row justify-between items-center mb-4 space-y-4 md:space-y-0">
         <h2 className="text-2xl font-semibold">Lista de Mediciones</h2>
-        <div className="flex space-x-2">
+        <div className="flex flex-wrap gap-4">
+          {/* Filtros */}
+          <Select
+            name="deviceId"
+            onValueChange={(value) =>
+              setFilters((prev) => ({
+                ...prev,
+                deviceId: value,
+                page: 1,
+              }))
+            }
+            value={filters.deviceId}
+          >
+            <SelectTrigger className="w-64">
+              <SelectValue placeholder="Dispositivo" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">Todos los Dispositivos</SelectItem>
+              {devices.map((device) => (
+                <SelectItem key={device.id} value={device.id.toString()}>
+                  {device.name} ({device.serialNumber})
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select
+            name="sensorId"
+            onValueChange={(value) =>
+              setFilters((prev) => ({
+                ...prev,
+                sensorId: value,
+                page: 1,
+              }))
+            }
+            value={filters.sensorId}
+          >
+            <SelectTrigger className="w-64">
+              <SelectValue placeholder="Sensor" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">Todos los Sensores</SelectItem>
+              {sensors.map((sensor) => (
+                <SelectItem key={sensor.id} value={sensor.id.toString()}>
+                  {sensor.model} - {sensor.serialNumber}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select
+            name="isValid"
+            onValueChange={(value) =>
+              setFilters((prev) => ({
+                ...prev,
+                isValid: value,
+                page: 1,
+              }))
+            }
+            value={filters.isValid}
+          >
+            <SelectTrigger className="w-48">
+              <SelectValue placeholder="¿Es válida?" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">Todas</SelectItem>
+              <SelectItem value="true">Sí</SelectItem>
+              <SelectItem value="false">No</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <div className="flex items-center space-x-2">
+            <Input
+              type="date"
+              name="startDate"
+              value={filters.startDate}
+              onChange={handleFilterChange}
+              placeholder="Fecha Inicio"
+            />
+            <Input
+              type="date"
+              name="endDate"
+              value={filters.endDate}
+              onChange={handleFilterChange}
+              placeholder="Fecha Fin"
+            />
+          </div>
+
           <Button onClick={openAddDialog}>
             <Plus className="mr-2 h-4 w-4" /> Agregar Medición
           </Button>
-          <Button variant="secondary" onClick={() => setIsManageParametersOpen(true)}>
-            Gestionar Parámetros
-          </Button>
-          <Button variant="secondary" onClick={() => setIsManageDevicesOpen(true)}>
-            Gestionar Dispositivos
-          </Button>
         </div>
+      </div>
+
+      {/* Paginación */}
+      <div className="flex justify-end items-center space-x-2 mb-4">
+        <Button
+          disabled={filters.page === 1}
+          onClick={() => handlePageChange(filters.page - 1)}
+        >
+          Anterior
+        </Button>
+        <span>
+          Página {filters.page} de {totalPages}
+        </span>
+        <Button
+          disabled={filters.page === totalPages}
+          onClick={() => handlePageChange(filters.page + 1)}
+        >
+          Siguiente
+        </Button>
       </div>
 
       {/* Diálogo para Agregar/Editar Mediciones */}
@@ -1098,6 +1305,7 @@ export default function MeasurementsPage() {
             <TableHead>Dispositivo</TableHead>
             <TableHead>Sensor</TableHead>
             <TableHead>Parámetros</TableHead>
+            <TableHead>Validez</TableHead>
             <TableHead>Acciones</TableHead>
           </TableRow>
         </TableHeader>
@@ -1105,7 +1313,7 @@ export default function MeasurementsPage() {
           {measurements.map((measurement) => (
             <TableRow key={measurement.id}>
               <TableCell className="font-medium">
-                {new Date(measurement.dateTime).toLocaleString()}
+                {formatDateTime(measurement.dateTime)}
               </TableCell>
               <TableCell>{measurement.device?.name || 'N/A'}</TableCell>
               <TableCell>
@@ -1120,6 +1328,13 @@ export default function MeasurementsPage() {
                   ))
                 ) : (
                   <span>N/A</span>
+                )}
+              </TableCell>
+              <TableCell>
+                {measurement.isValid ? (
+                  <span className="text-green-500">Válida</span>
+                ) : (
+                  <span className="text-red-500">Inválida</span>
                 )}
               </TableCell>
               <TableCell>

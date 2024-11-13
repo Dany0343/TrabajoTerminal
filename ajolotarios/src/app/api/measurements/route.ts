@@ -1,32 +1,80 @@
 // app/api/measurements/route.ts
 
 import { NextResponse } from 'next/server';
-import db from '@/lib/db'
+import db from '@/lib/db';
 
-
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    const measurements = await db.measurement.findMany({
-      include: {
-        device: {
-          include: {
-            tank: true, 
+    const { searchParams } = new URL(request.url);
+    const deviceId = searchParams.get('deviceId');
+    const sensorId = searchParams.get('sensorId');
+    const isValid = searchParams.get('isValid');
+    const startDate = searchParams.get('startDate');
+    const endDate = searchParams.get('endDate');
+    const page = Number(searchParams.get('page')) || 1;
+    const limit = Number(searchParams.get('limit')) || 10;
+    const skip = (page - 1) * limit;
+
+    const where: any = {};
+
+    if (deviceId) {
+      where.deviceId = Number(deviceId);
+    }
+
+    if (sensorId) {
+      where.sensorId = Number(sensorId);
+    }
+
+    if (isValid !== null) {
+      where.isValid = isValid === 'true';
+    }
+
+    if (startDate || endDate) {
+      where.dateTime = {};
+      if (startDate) {
+        where.dateTime.gte = new Date(startDate);
+      }
+      if (endDate) {
+        where.dateTime.lte = new Date(endDate);
+      }
+    }
+
+    const [measurements, total] = await Promise.all([
+      db.measurement.findMany({
+        where,
+        include: {
+          device: {
+            include: {
+              tank: true,
+            },
           },
-        },
-        sensor: {
-          include: {
-            type: true,
+          sensor: {
+            include: {
+              type: true,
+            },
           },
-        },
-        parameters: {
-          include: {
-            parameter: true,
+          parameters: {
+            include: {
+              parameter: true,
+            },
           },
+          alerts: true,
         },
-        alerts: true,
-      },
+        orderBy: {
+          dateTime: 'desc',
+        },
+        skip,
+        take: limit,
+      }),
+      db.measurement.count({ where }),
+    ]);
+
+    return NextResponse.json({
+      data: measurements,
+      total,
+      page,
+      totalPages: Math.ceil(total / limit),
     });
-    return NextResponse.json(measurements);
   } catch (error) {
     console.error(error);
     return new NextResponse('Error al obtener las mediciones', { status: 500 });
@@ -36,17 +84,22 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const data = await request.json();
-    const {
-      deviceId,
-      sensorId,
-      dateTime,
-      isValid,
-      parameters,
-    } = data;
+    const { deviceId, sensorId, dateTime, isValid, parameters } = data;
 
     // Validación de campos requeridos
     if (!deviceId || !sensorId || !parameters) {
       return new NextResponse('Faltan campos requeridos', { status: 400 });
+    }
+
+    // Validar existencia de dispositivo y sensor
+    const device = await db.device.findUnique({ where: { id: deviceId } });
+    if (!device) {
+      return new NextResponse('Dispositivo no encontrado', { status: 404 });
+    }
+
+    const sensor = await db.sensor.findUnique({ where: { id: sensorId } });
+    if (!sensor) {
+      return new NextResponse('Sensor no encontrado', { status: 404 });
     }
 
     // Crear la medición
@@ -75,6 +128,7 @@ export async function POST(request: Request) {
             parameter: true,
           },
         },
+        alerts: true,
       },
     });
 
