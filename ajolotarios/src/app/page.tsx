@@ -159,9 +159,8 @@ export default function Dashboard() {
           </div>
           </div>
 
-          {/* Charts and Map */}
+          {/* Map */}
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7 mb-6">
-            {/* Eliminar el gráfico de tendencias y mantener solo el mapa */}
             <Card className="col-span-7">
               <CardHeader>
                 <CardTitle>Mapa de Instalaciones</CardTitle>
