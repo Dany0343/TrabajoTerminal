@@ -163,12 +163,12 @@ export default function AlertsPage() {
           throw new Error("Error al obtener las mediciones");
         }
         const data = await res.json();
-        setMeasurements(data);
+        setMeasurements(data.data); 
       } catch (error) {
         console.error(error);
       }
     };
-
+  
     // Obtener usuarios
     const fetchUsers = async () => {
       try {
@@ -177,12 +177,12 @@ export default function AlertsPage() {
           throw new Error("Error al obtener los usuarios");
         }
         const data = await res.json();
-        setUsers(data);
+        setUsers(data); 
       } catch (error) {
         console.error(error);
       }
     };
-
+  
     fetchMeasurements();
     fetchUsers();
   }, []);
