@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Textarea } from '@/components/ui/textarea'
@@ -31,9 +31,17 @@ type Tank = {
   name: string
 }
 
+type Ajolotary = {
+  id: number
+  name: string
+}
+
 export default function AxolotlsPage() {
   const [axolotls, setAxolotls] = useState<Axolotl[]>([])
+  const [filteredAxolotls, setFilteredAxolotls] = useState<Axolotl[]>([])
   const [tanks, setTanks] = useState<Tank[]>([])
+  const [ajolotaries, setAjolotaries] = useState<Ajolotary[]>([])
+  const [selectedAjolotaryId, setSelectedAjolotaryId] = useState<number | 'ALL'>('ALL')
   const [formAxolotl, setFormAxolotl] = useState<Omit<Axolotl, 'id' | 'tank'>>({
     name: '',
     species: '',
@@ -49,69 +57,123 @@ export default function AxolotlsPage() {
   const [editingId, setEditingId] = useState<number | null>(null)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
 
+  // Fetch Ajolotaries
   useEffect(() => {
-    // Obtener ajolotes
-    fetch('/api/axolotls')
-      .then((res) => res.json())
-      .then((data) => setAxolotls(data))
-      .catch((error) => console.error(error))
+    const fetchAjolotaries = async () => {
+      try {
+        const res = await fetch('/api/ajolotaries');
+        if (!res.ok) {
+          throw new Error('Error al obtener los ajolotaries');
+        }
+        const data = await res.json();
+        setAjolotaries(data);
+      } catch (error) {
+        console.error(error);
+      }
+    };
 
-    // Obtener tanques
-    fetch('/api/tanks')
-      .then((res) => res.json())
-      .then((data) => setTanks(data))
-      .catch((error) => console.error(error))
+    fetchAjolotaries();
   }, [])
 
+  // Fetch Tanks
+  useEffect(() => {
+    const fetchTanks = async () => {
+      try {
+        const res = await fetch('/api/tanks');
+        if (!res.ok) {
+          throw new Error('Error al obtener los tanques');
+        }
+        const data = await res.json();
+        setTanks(data);
+      } catch (error) {
+        console.error(error);
+      }
+    };
+
+    fetchTanks();
+  }, [])
+
+  // Fetch Axolotls with Filter
+  useEffect(() => {
+    const fetchAxolotls = async () => {
+      try {
+        let url = '/api/axolotls';
+        if (selectedAjolotaryId !== 'ALL') {
+          url += `?ajolotaryId=${selectedAjolotaryId}`;
+        }
+        const res = await fetch(url);
+        if (!res.ok) {
+          throw new Error('Error al obtener los ajolotes');
+        }
+        const data = await res.json();
+        setAxolotls(data)
+        setFilteredAxolotls(data)
+      } catch (error) {
+        console.error(error);
+      }
+    };
+
+    fetchAxolotls();
+  }, [selectedAjolotaryId, isDialogOpen]); // Refrescar al cambiar el filtro o al abrir/cerrar el diálogo
+
   const addOrUpdateAxolotl = async () => {
-    if (isEditing && editingId !== null) {
-      // Actualizar ajolote
-      const response = await fetch(`/api/axolotls/${editingId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formAxolotl),
-      })
-      if (response.ok) {
-        const updatedAxolotl = await response.json()
-        setAxolotls(axolotls.map((axolotl) => (axolotl.id === editingId ? updatedAxolotl : axolotl)))
-        setIsEditing(false)
-        setEditingId(null)
+    try {
+      if (isEditing && editingId !== null) {
+        // Actualizar ajolote
+        const response = await fetch(`/api/axolotls/${editingId}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(formAxolotl),
+        })
+        if (response.ok) {
+          const updatedAxolotl = await response.json()
+          setAxolotls(axolotls.map((axolotl) => (axolotl.id === editingId ? updatedAxolotl : axolotl)))
+          setFilteredAxolotls(filteredAxolotls.map((axolotl) => (axolotl.id === editingId ? updatedAxolotl : axolotl)))
+          setIsEditing(false)
+          setEditingId(null)
+        } else {
+          console.error('Error al actualizar el ajolote')
+          // Opcional: Manejar el error en la UI
+        }
       } else {
-        console.error('Error al actualizar el ajolote')
+        // Agregar nuevo ajolote
+        const response = await fetch('/api/axolotls', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(formAxolotl),
+        })
+        if (response.ok) {
+          const createdAxolotl = await response.json()
+          setAxolotls([...axolotls, createdAxolotl])
+          setFilteredAxolotls([...filteredAxolotls, createdAxolotl])
+        } else {
+          console.error('Error al crear el ajolote')
+          // Opcional: Manejar el error en la UI
+        }
       }
-    } else {
-      // Agregar nuevo ajolote
-      const response = await fetch('/api/axolotls', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formAxolotl),
+      // Restablecer formulario y cerrar diálogo
+      setFormAxolotl({
+        name: '',
+        species: '',
+        age: 0,
+        health: 'HEALTHY',
+        size: 0,
+        weight: 0,
+        stage: 'JUVENILE',
+        tankId: 0,
+        observations: [],
       })
-      if (response.ok) {
-        const createdAxolotl = await response.json()
-        setAxolotls([...axolotls, createdAxolotl])
-      } else {
-        console.error('Error al crear el ajolote')
-      }
+      setIsDialogOpen(false)
+      setIsEditing(false)
+      setEditingId(null)
+    } catch (error) {
+      console.error('Error en addOrUpdateAxolotl:', error)
+      // Opcional: Manejar el error en la UI
     }
-    // Restablecer formulario y cerrar diálogo
-    setFormAxolotl({
-      name: '',
-      species: '',
-      age: 0,
-      health: 'HEALTHY',
-      size: 0,
-      weight: 0,
-      stage: 'JUVENILE',
-      tankId: 0,
-      observations: [],
-    })
-    setIsDialogOpen(false)
-    setIsEditing(false)
-    setEditingId(null)
   }
 
   const openAddDialog = () => {
@@ -148,13 +210,20 @@ export default function AxolotlsPage() {
   }
 
   const deleteAxolotl = async (id: number) => {
-    const response = await fetch(`/api/axolotls/${id}`, {
-      method: 'DELETE',
-    })
-    if (response.ok) {
-      setAxolotls(axolotls.filter((axolotl) => axolotl.id !== id))
-    } else {
-      console.error('Error al eliminar el ajolote')
+    try {
+      const response = await fetch(`/api/axolotls/${id}`, {
+        method: 'DELETE',
+      })
+      if (response.ok) {
+        setAxolotls(axolotls.filter((axolotl) => axolotl.id !== id))
+        setFilteredAxolotls(filteredAxolotls.filter((axolotl) => axolotl.id !== id))
+      } else {
+        console.error('Error al eliminar el ajolote')
+        // Opcional: Manejar el error en la UI
+      }
+    } catch (error) {
+      console.error('Error en deleteAxolotl:', error)
+      // Opcional: Manejar el error en la UI
     }
   }
 
@@ -165,6 +234,7 @@ export default function AxolotlsPage() {
       case 'SICK': return 'text-yellow-500'
       case 'CRITICAL': return 'text-red-500'
       case 'QUARANTINE': return 'text-purple-500'
+      default: return 'text-gray-500'
     }
   }
 
@@ -177,7 +247,7 @@ export default function AxolotlsPage() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {axolotls.slice(0, 3).map((axolotl) => (
+            {filteredAxolotls.slice(0, 3).map((axolotl) => (
               <Card key={axolotl.id}>
                 <CardHeader>
                   <div className="flex items-center space-x-4">
@@ -219,9 +289,34 @@ export default function AxolotlsPage() {
       
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-2xl font-semibold">Lista de Ajolotes</h2>
-        <Button onClick={openAddDialog}>
-          <Plus className="mr-2 h-4 w-4" /> Agregar Ajolote
-        </Button>
+        <div className="flex space-x-4">
+          {/* Selector para Filtrar por Ajolotary */}
+          <Select
+            onValueChange={(value) => {
+              if (value === 'ALL') {
+                setSelectedAjolotaryId('ALL');
+              } else {
+                setSelectedAjolotaryId(Number(value));
+              }
+            }}
+            value={selectedAjolotaryId.toString()}
+          >
+            <SelectTrigger className="w-64">
+              <SelectValue placeholder="Filtrar por Ajolotary" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">Todos los Ajolotaries</SelectItem>
+              {ajolotaries.map((ajolotary) => (
+                <SelectItem key={ajolotary.id} value={ajolotary.id.toString()}>
+                  {ajolotary.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Button onClick={openAddDialog}>
+            <Plus className="mr-2 h-4 w-4" /> Agregar Ajolote
+          </Button>
+        </div>
       </div>
 
       {/* Diálogo para Agregar/Editar */}
@@ -362,7 +457,7 @@ export default function AxolotlsPage() {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {axolotls.map((axolotl) => (
+          {filteredAxolotls.map((axolotl) => (
             <TableRow key={axolotl.id}>
               <TableCell className="font-medium">{axolotl.name}</TableCell>
               <TableCell>{axolotl.species}</TableCell>
