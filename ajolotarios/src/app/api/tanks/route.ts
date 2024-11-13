@@ -3,16 +3,29 @@
 import { NextResponse } from 'next/server';
 import db from "@/lib/db";
 
-
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const { searchParams } = new URL(request.url);
+    const ajolotaryIdParam = searchParams.get('ajolotaryId');
+
+    // Construir el objeto 'where' para la consulta
+    const where: any = {};
+    if (ajolotaryIdParam) {
+      const ajolotaryId = Number(ajolotaryIdParam);
+      if (!isNaN(ajolotaryId)) {
+        where.ajolotaryId = ajolotaryId;
+      }
+    }
+
     const tanks = await db.tank.findMany({
+      where,
       include: {
         ajolotary: true, // Incluye datos del ajolotario relacionado
       },
     });
     return NextResponse.json(tanks);
   } catch (error) {
+    console.error(error);
     return new NextResponse('Error al obtener los tanques', { status: 500 });
   }
 }
@@ -34,6 +47,9 @@ export async function POST(request: Request) {
         observations,
         status,
         ajolotaryId,
+      },
+      include: {
+        ajolotary: true, // Incluir datos del ajolotario relacionado en la respuesta
       },
     });
 

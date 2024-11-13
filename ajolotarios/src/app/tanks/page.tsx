@@ -27,7 +27,9 @@ type Ajolotary = {
 
 export default function TanksPage() {
   const [tanks, setTanks] = useState<Tank[]>([])
+  const [filteredTanks, setFilteredTanks] = useState<Tank[]>([])
   const [ajolotaries, setAjolotaries] = useState<Ajolotary[]>([])
+  const [selectedAjolotaryId, setSelectedAjolotaryId] = useState<number | 'ALL'>('ALL')
   const [formTank, setFormTank] = useState<Omit<Tank, 'id'>>({
     name: '',
     capacity: 0,
@@ -40,64 +42,96 @@ export default function TanksPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
 
   useEffect(() => {
-    // Obtener tanques
-    fetch('/api/tanks')
-      .then((res) => res.json())
-      .then((data) => setTanks(data))
-      .catch((error) => console.error(error))
+    const fetchTanks = async () => {
+      try {
+        let url = '/api/tanks';
+        if (selectedAjolotaryId !== 'ALL') {
+          url += `?ajolotaryId=${selectedAjolotaryId}`;
+        }
+        const res = await fetch(url);
+        if (!res.ok) {
+          throw new Error('Error al obtener los tanques');
+        }
+        const data = await res.json();
+        setFilteredTanks(data);
+      } catch (error) {
+        console.error(error);
+      }
+    };
 
+    fetchTanks();
+  }, [selectedAjolotaryId, isDialogOpen]); // Refrescar al cambiar el filtro o al abrir/cerrar el diálogo
+
+  useEffect(() => {
     // Obtener ajolotarios
-    fetch('/api/ajolotaries')
-      .then((res) => res.json())
-      .then((data) => setAjolotaries(data))
-      .catch((error) => console.error(error))
+    const fetchAjolotaries = async () => {
+      try {
+        const res = await fetch('/api/ajolotaries');
+        if (!res.ok) {
+          throw new Error('Error al obtener los ajolotarios');
+        }
+        const data = await res.json();
+        setAjolotaries(data);
+      } catch (error) {
+        console.error(error);
+      }
+    };
+
+    fetchAjolotaries();
   }, [])
 
   const addOrUpdateTank = async () => {
-    if (isEditing && editingId !== null) {
-      // Actualizar tanque
-      const response = await fetch(`/api/tanks/${editingId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formTank),
-      })
-      if (response.ok) {
-        const updatedTank = await response.json()
-        setTanks(tanks.map((tank) => (tank.id === editingId ? updatedTank : tank)))
-        setIsEditing(false)
-        setEditingId(null)
+    try {
+      if (isEditing && editingId !== null) {
+        // Actualizar tanque
+        const response = await fetch(`/api/tanks/${editingId}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(formTank),
+        })
+        if (response.ok) {
+          const updatedTank = await response.json()
+          setTanks(tanks.map((tank) => (tank.id === editingId ? updatedTank : tank)))
+          setIsEditing(false)
+          setEditingId(null)
+        } else {
+          console.error('Error al actualizar el tanque')
+          // Opcional: Manejar el error en la UI
+        }
       } else {
-        console.error('Error al actualizar el tanque')
+        // Agregar nuevo tanque
+        const response = await fetch('/api/tanks', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(formTank),
+        })
+        if (response.ok) {
+          const createdTank = await response.json()
+          setTanks([...tanks, createdTank])
+        } else {
+          console.error('Error al crear el tanque')
+          // Opcional: Manejar el error en la UI
+        }
       }
-    } else {
-      // Agregar nuevo tanque
-      const response = await fetch('/api/tanks', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formTank),
+      // Restablecer formulario y cerrar diálogo
+      setFormTank({
+        name: '',
+        capacity: 0,
+        observations: '',
+        status: 'ACTIVE',
+        ajolotaryId: 0,
       })
-      if (response.ok) {
-        const createdTank = await response.json()
-        setTanks([...tanks, createdTank])
-      } else {
-        console.error('Error al crear el tanque')
-      }
+      setIsDialogOpen(false)
+      setIsEditing(false)
+      setEditingId(null)
+    } catch (error) {
+      console.error('Error en addOrUpdateTank:', error)
+      // Opcional: Manejar el error en la UI
     }
-    // Restablecer formulario y cerrar diálogo
-    setFormTank({
-      name: '',
-      capacity: 0,
-      observations: '',
-      status: 'ACTIVE',
-      ajolotaryId: 0,
-    })
-    setIsDialogOpen(false)
-    setIsEditing(false)
-    setEditingId(null)
   }
 
   const openAddDialog = () => {
@@ -126,13 +160,19 @@ export default function TanksPage() {
   }
 
   const deleteTank = async (id: number) => {
-    const response = await fetch(`/api/tanks/${id}`, {
-      method: 'DELETE',
-    })
-    if (response.ok) {
-      setTanks(tanks.filter((tank) => tank.id !== id))
-    } else {
-      console.error('Error al eliminar el tanque')
+    try {
+      const response = await fetch(`/api/tanks/${id}`, {
+        method: 'DELETE',
+      })
+      if (response.ok) {
+        setTanks(tanks.filter((tank) => tank.id !== id))
+      } else {
+        console.error('Error al eliminar el tanque')
+        // Opcional: Manejar el error en la UI
+      }
+    } catch (error) {
+      console.error('Error en deleteTank:', error)
+      // Opcional: Manejar el error en la UI
     }
   }
 
@@ -150,9 +190,34 @@ export default function TanksPage() {
       
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-2xl font-semibold">Lista de Tanques</h2>
-        <Button onClick={openAddDialog}>
-          <Plus className="mr-2 h-4 w-4" /> Agregar Tanque
-        </Button>
+        <div className="flex space-x-4">
+          {/* Selector para Filtrar por Ajolotario */}
+          <Select
+            onValueChange={(value) => {
+              if (value === 'ALL') {
+                setSelectedAjolotaryId('ALL');
+              } else {
+                setSelectedAjolotaryId(Number(value));
+              }
+            }}
+            value={selectedAjolotaryId.toString()}
+          >
+            <SelectTrigger className="w-48">
+              <SelectValue placeholder="Filtrar por Ajolotario" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">Todos los Ajolotarios</SelectItem>
+              {ajolotaries.map((ajolotary) => (
+                <SelectItem key={ajolotary.id} value={ajolotary.id.toString()}>
+                  {ajolotary.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Button onClick={openAddDialog}>
+            <Plus className="mr-2 h-4 w-4" /> Agregar Tanque
+          </Button>
+        </div>
       </div>
 
       {/* Diálogo para Agregar/Editar */}
@@ -244,7 +309,7 @@ export default function TanksPage() {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {tanks.map((tank) => (
+          {filteredTanks.map((tank) => (
             <TableRow key={tank.id}>
               <TableCell>{tank.name}</TableCell>
               <TableCell>{tank.capacity} L</TableCell>

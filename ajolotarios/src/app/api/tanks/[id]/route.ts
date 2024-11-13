@@ -16,6 +16,7 @@ export async function GET(request: Request, { params }: { params: { id: string }
     }
     return NextResponse.json(tank);
   } catch (error) {
+    console.error(error);
     return new NextResponse('Error al obtener el tanque', { status: 500 });
   }
 }
@@ -26,6 +27,9 @@ export async function PUT(request: Request, { params }: { params: { id: string }
     const updatedTank = await db.tank.update({
       where: { id: Number(params.id) },
       data,
+      include: {
+        ajolotary: true, // Incluir datos del ajolotario relacionado en la respuesta
+      },
     });
     return NextResponse.json(updatedTank);
   } catch (error) {
@@ -41,6 +45,7 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
     });
     return new NextResponse(null, { status: 204 });
   } catch (error) {
+    console.error(error);
     return new NextResponse('Error al eliminar el tanque', { status: 500 });
   }
 }
