@@ -1,3 +1,5 @@
+// componente: AlertsPage.jsx
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -61,8 +63,7 @@ type Measurement = {
   id: number;
   device: Device;
   sensor: Sensor;
-  dateTime: string; // Asegúrate de que dateTime esté incluido
-  // Otros campos según tu modelo
+  dateTime: string;
 };
 
 type User = {
@@ -74,13 +75,11 @@ type User = {
 type Device = {
   id: number;
   name: string;
-  // Otros campos según tu modelo
 };
 
 type Sensor = {
   id: number;
   type: SensorType;
-  // Otros campos según tu modelo
 };
 
 type SensorType = {
@@ -108,25 +107,84 @@ export default function AlertsPage() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [formErrors, setFormErrors] = useState<{ [key: string]: string }>({});
+  const [filters, setFilters] = useState({
+    alertType: "ALL",
+    priority: "ALL",
+    status: "ALL",
+    measurementId: "ALL",
+    resolverId: "ALL",
+    page: 1,
+    limit: 10,
+  });
+  const [totalPages, setTotalPages] = useState(1);
 
   useEffect(() => {
-    // Obtener alertas
-    fetch("/api/alerts")
-      .then((res) => res.json())
-      .then((data) => setAlerts(data))
-      .catch((error) => console.error(error));
+    const fetchAlerts = async () => {
+      try {
+        let url = `/api/alerts?page=${filters.page}&limit=${filters.limit}`;
 
+        if (filters.alertType !== "ALL") {
+          url += `&alertType=${filters.alertType}`;
+        }
+        if (filters.priority !== "ALL") {
+          url += `&priority=${filters.priority}`;
+        }
+        if (filters.status !== "ALL") {
+          url += `&status=${filters.status}`;
+        }
+        if (filters.measurementId !== "ALL") {
+          url += `&measurementId=${filters.measurementId}`;
+        }
+        if (filters.resolverId !== "ALL") {
+          url += `&resolverId=${filters.resolverId}`;
+        }
+
+        const res = await fetch(url);
+        if (!res.ok) {
+          throw new Error('Error al obtener las alertas');
+        }
+        const data = await res.json();
+        setAlerts(data.data);
+        setTotalPages(data.totalPages);
+      } catch (error) {
+        console.error(error);
+      }
+    };
+
+    fetchAlerts();
+  }, [filters]);
+
+  useEffect(() => {
     // Obtener mediciones
-    fetch("/api/measurements")
-      .then((res) => res.json())
-      .then((data) => setMeasurements(data))
-      .catch((error) => console.error(error));
+    const fetchMeasurements = async () => {
+      try {
+        const res = await fetch("/api/measurements");
+        if (!res.ok) {
+          throw new Error("Error al obtener las mediciones");
+        }
+        const data = await res.json();
+        setMeasurements(data);
+      } catch (error) {
+        console.error(error);
+      }
+    };
 
     // Obtener usuarios
-    fetch("/api/users")
-      .then((res) => res.json())
-      .then((data) => setUsers(data))
-      .catch((error) => console.error(error));
+    const fetchUsers = async () => {
+      try {
+        const res = await fetch("/api/users");
+        if (!res.ok) {
+          throw new Error("Error al obtener los usuarios");
+        }
+        const data = await res.json();
+        setUsers(data);
+      } catch (error) {
+        console.error(error);
+      }
+    };
+
+    fetchMeasurements();
+    fetchUsers();
   }, []);
 
   const validateForm = () => {
@@ -153,7 +211,7 @@ export default function AlertsPage() {
     if (!validateForm()) {
       return;
     }
-  
+
     try {
       let response;
       if (isEditing && editingId !== null) {
@@ -175,7 +233,7 @@ export default function AlertsPage() {
           body: JSON.stringify(formAlert),
         });
       }
-  
+
       if (response.ok) {
         const updatedOrCreatedAlert = await response.json();
         if (isEditing) {
@@ -190,18 +248,19 @@ export default function AlertsPage() {
         setIsEditing(false);
         setEditingId(null);
         setIsDialogOpen(false);
-        // Opcional: Mostrar mensaje de éxito
-        alert(isEditing ? "Alerta actualizada exitosamente." : "Alerta agregada exitosamente.");
+        alert(
+          isEditing ? "Alerta actualizada exitosamente." : "Alerta agregada exitosamente."
+        );
+        // Reset filters if needed
       } else {
         const errorMessage = await response.text();
-        // Mostrar el mensaje de error recibido desde el backend
         alert(`Error: ${errorMessage}`);
       }
     } catch (error) {
       console.error("Error al procesar la alerta:", error);
       alert("Ocurrió un error inesperado. Por favor, intenta nuevamente.");
     }
-  
+
     // Restablecer formulario
     setFormAlert({
       measurementId: 0,
@@ -214,7 +273,7 @@ export default function AlertsPage() {
       notes: "",
     });
     setFormErrors({});
-  };  
+  };
 
   const openAddDialog = () => {
     setIsEditing(false);
@@ -258,13 +317,20 @@ export default function AlertsPage() {
       return;
     }
 
-    const response = await fetch(`/api/alerts/${id}`, {
-      method: "DELETE",
-    });
-    if (response.ok) {
-      setAlerts(alerts.filter((alert) => alert.id !== id));
-    } else {
-      console.error("Error al eliminar la alerta");
+    try {
+      const response = await fetch(`/api/alerts/${id}`, {
+        method: "DELETE",
+      });
+      if (response.ok) {
+        setAlerts(alerts.filter((alert) => alert.id !== id));
+        alert("Alerta eliminada exitosamente.");
+      } else {
+        const errorMessage = await response.text();
+        alert(`Error: ${errorMessage}`);
+      }
+    } catch (error) {
+      console.error("Error al eliminar la alerta:", error);
+      alert("Ocurrió un error inesperado. Por favor, intenta nuevamente.");
     }
   };
 
@@ -275,7 +341,7 @@ export default function AlertsPage() {
       case "MEDIUM":
         return "bg-yellow-500";
       case "HIGH":
-        return "bg-orange-500";
+        return "bg-red-500";
       default:
         return "bg-gray-500";
     }
@@ -296,7 +362,6 @@ export default function AlertsPage() {
     }
   };
 
-  // Función para formatear la fecha y hora
   const formatDateTime = (dateTime: string) => {
     const date = new Date(dateTime);
     return date.toLocaleString('es-ES', {
@@ -306,6 +371,23 @@ export default function AlertsPage() {
       hour: '2-digit',
       minute: '2-digit',
     });
+  };
+
+  const handleFilterChange = (e: React.ChangeEvent<HTMLSelectElement | HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFilters((prev) => ({
+      ...prev,
+      [name]: value,
+      page: 1, // Reset to first page on filter change
+    }));
+  };
+
+  const handlePageChange = (newPage: number) => {
+    if (newPage < 1 || newPage > totalPages) return;
+    setFilters((prev) => ({
+      ...prev,
+      page: newPage,
+    }));
   };
 
   return (
@@ -349,10 +431,159 @@ export default function AlertsPage() {
         </CardContent>
       </Card>
 
-      <div className="flex justify-between items-center mb-4">
+      <div className="flex flex-col md:flex-row justify-between items-center mb-4 space-y-4 md:space-y-0">
         <h2 className="text-2xl font-semibold">Lista de Alertas</h2>
-        <Button onClick={openAddDialog}>
-          <Plus className="mr-2 h-4 w-4" /> Agregar Alerta
+        <div className="flex flex-wrap gap-4">
+          <Select
+            name="alertType"
+            onValueChange={(value) =>
+              setFilters((prev) => ({
+                ...prev,
+                alertType: value,
+                page: 1,
+              }))
+            }
+            value={filters.alertType}
+          >
+            <SelectTrigger className="w-64">
+              <SelectValue placeholder="Tipo de Alerta" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">Todas las Alertas</SelectItem>
+              <SelectItem value="PARAMETER_OUT_OF_RANGE">
+                Parámetro fuera de rango
+              </SelectItem>
+              <SelectItem value="DEVICE_MALFUNCTION">
+                Fallo de dispositivo
+              </SelectItem>
+              <SelectItem value="MAINTENANCE_REQUIRED">
+                Requiere mantenimiento
+              </SelectItem>
+              <SelectItem value="SYSTEM_ERROR">Error de sistema</SelectItem>
+              <SelectItem value="CALIBRATION_NEEDED">
+                Necesita calibración
+              </SelectItem>
+              <SelectItem value="HEALTH_ISSUE">
+                Problema de salud
+              </SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Select
+            name="priority"
+            onValueChange={(value) =>
+              setFilters((prev) => ({
+                ...prev,
+                priority: value,
+                page: 1,
+              }))
+            }
+            value={filters.priority}
+          >
+            <SelectTrigger className="w-48">
+              <SelectValue placeholder="Prioridad" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">Todas las Prioridades</SelectItem>
+              <SelectItem value="HIGH">Alta</SelectItem>
+              <SelectItem value="MEDIUM">Media</SelectItem>
+              <SelectItem value="LOW">Baja</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Select
+            name="status"
+            onValueChange={(value) =>
+              setFilters((prev) => ({
+                ...prev,
+                status: value,
+                page: 1,
+              }))
+            }
+            value={filters.status}
+          >
+            <SelectTrigger className="w-48">
+              <SelectValue placeholder="Estado" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">Todos los Estados</SelectItem>
+              <SelectItem value="PENDING">Pendiente</SelectItem>
+              <SelectItem value="ACKNOWLEDGED">Reconocida</SelectItem>
+              <SelectItem value="RESOLVED">Resuelta</SelectItem>
+              <SelectItem value="ESCALATED">Escalada</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Select
+            name="measurementId"
+            onValueChange={(value) =>
+              setFilters((prev) => ({
+                ...prev,
+                measurementId: value,
+                page: 1,
+              }))
+            }
+            value={filters.measurementId}
+          >
+            <SelectTrigger className="w-64">
+              <SelectValue placeholder="Medición" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">Todas las Mediciones</SelectItem>
+              {measurements.map((measurement) => (
+                <SelectItem key={measurement.id} value={measurement.id.toString()}>
+                  Medición {measurement.id} - Dispositivo: {measurement.device?.name || 'N/A'}, Sensor: {measurement.sensor?.type?.name || 'N/A'}, Fecha: {formatDateTime(measurement.dateTime)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select
+            name="resolverId"
+            onValueChange={(value) =>
+              setFilters((prev) => ({
+                ...prev,
+                resolverId: value,
+                page: 1,
+              }))
+            }
+            value={filters.resolverId}
+          >
+            <SelectTrigger className="w-64">
+              <SelectValue placeholder="Resuelto por" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">Todos los Usuarios</SelectItem>
+              {users.map((user) => (
+                <SelectItem key={user.id} value={user.id.toString()}>
+                  {user.firstName} {user.lastName}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Button onClick={openAddDialog}>
+            <Plus className="mr-2 h-4 w-4" /> Agregar Alerta
+          </Button>
+        </div>
+      </div>
+
+      {/* Paginación */}
+      <div className="flex justify-end items-center space-x-2 mb-4">
+        <Button
+          disabled={filters.page === 1}
+          onClick={() => handlePageChange(filters.page - 1)}
+        >
+          Anterior
+        </Button>
+        <span>
+          Página {filters.page} de {totalPages}
+        </span>
+        <Button
+          disabled={filters.page === totalPages}
+          onClick={() => handlePageChange(filters.page + 1)}
+        >
+          Siguiente
         </Button>
       </div>
 
@@ -489,6 +720,7 @@ export default function AlertsPage() {
                     <SelectValue placeholder="Selecciona una medición" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="ALL">Todas las Mediciones</SelectItem>
                     {measurements.map((measurement) => (
                       <SelectItem
                         key={measurement.id}
@@ -557,6 +789,7 @@ export default function AlertsPage() {
                         <SelectValue placeholder="Selecciona un usuario" />
                       </SelectTrigger>
                       <SelectContent>
+                        <SelectItem value="ALL">Todos los Usuarios</SelectItem>
                         {users.map((user) => (
                           <SelectItem
                             key={user.id}
@@ -655,6 +888,25 @@ export default function AlertsPage() {
           ))}
         </TableBody>
       </Table>
+
+      {/* Paginación Inferior */}
+      <div className="flex justify-end items-center space-x-2 mt-4">
+        <Button
+          disabled={filters.page === 1}
+          onClick={() => handlePageChange(filters.page - 1)}
+        >
+          Anterior
+        </Button>
+        <span>
+          Página {filters.page} de {totalPages}
+        </span>
+        <Button
+          disabled={filters.page === totalPages}
+          onClick={() => handlePageChange(filters.page + 1)}
+        >
+          Siguiente
+        </Button>
+      </div>
     </div>
   );
 }
