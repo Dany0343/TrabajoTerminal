@@ -55,6 +55,8 @@ type Sensor = {
 type Device = {
   id: number;
   name: string;
+  serialNumber: string;
+  tankId?: number;
 };
 
 type SensorType = {
@@ -95,9 +97,11 @@ export default function SensorsPage() {
 
   // Estado para Gestión de Device
   const [isManageDeviceOpen, setIsManageDeviceOpen] = useState(false);
-  const [newDevice, setNewDevice] = useState<Device>({
+    const [newDevice, setNewDevice] = useState<Device>({
     id: 0,
     name: '',
+    serialNumber: '',
+    tankId: 1, // Valor por defecto o puedes manejarlo con un select
   });
   const [editingDevice, setEditingDevice] = useState<Device | null>(null);
 
@@ -347,22 +351,26 @@ export default function SensorsPage() {
 
   // Funciones CRUD para Device
 
-  const addDevice = async () => {
-    if (!newDevice.name) {
-      alert('El nombre del dispositivo es obligatorio');
+    const addDevice = async () => {
+    if (!newDevice.name || !newDevice.serialNumber) {
+      alert('El nombre y número de serie son obligatorios');
       return;
     }
-
+  
     try {
       const response = await fetch('/api/devices', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newDevice),
+        body: JSON.stringify({
+          name: newDevice.name,
+          serialNumber: newDevice.serialNumber,
+          tankId: newDevice.tankId || 1, // Asegúrate de manejar esto apropiadamente
+        }),
       });
       if (response.ok) {
         const createdDevice = await response.json();
         setDevices([...devices, createdDevice]);
-        setNewDevice({ id: 0, name: '' });
+        setNewDevice({ id: 0, name: '', serialNumber: '' });
         alert('Dispositivo agregado exitosamente');
       } else {
         const errorText = await response.text();
@@ -373,18 +381,22 @@ export default function SensorsPage() {
       alert('Error al crear el dispositivo');
     }
   };
-
+  
   const updateDevice = async () => {
-    if (!editingDevice || !editingDevice.name) {
-      alert('El nombre del dispositivo es obligatorio');
+    if (!editingDevice || !editingDevice.name || !editingDevice.serialNumber) {
+      alert('El nombre y número de serie son obligatorios');
       return;
     }
-
+  
     try {
       const response = await fetch(`/api/devices/${editingDevice.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: editingDevice.name }),
+        body: JSON.stringify({
+          name: editingDevice.name,
+          serialNumber: editingDevice.serialNumber,
+          tankId: editingDevice.tankId || 1, // Asegúrate de manejar esto apropiadamente
+        }),
       });
       if (response.ok) {
         const updatedDevice = await response.json();
@@ -392,7 +404,7 @@ export default function SensorsPage() {
           devices.map((device) => (device.id === updatedDevice.id ? updatedDevice : device))
         );
         setEditingDevice(null);
-        setNewDevice({ id: 0, name: '' });
+        setNewDevice({ id: 0, name: '', serialNumber: '' });
         alert('Dispositivo actualizado exitosamente');
       } else {
         const errorText = await response.text();
@@ -740,7 +752,7 @@ export default function SensorsPage() {
                   </TableBody>
                 </Table>
 
-                {/* Formulario para Agregar/Editar Device */}
+                                {/* Formulario para Agregar/Editar Device */}
                 <div className="mt-4">
                   <h3 className="text-xl font-semibold">
                     {editingDevice ? 'Editar Dispositivo' : 'Agregar Nuevo Dispositivo'}
@@ -759,6 +771,20 @@ export default function SensorsPage() {
                         }
                       />
                     </div>
+                    <div>
+                      <Label htmlFor="serialNumber">Número de Serie</Label>
+                      <Input
+                        id="serialNumber"
+                        type="text"
+                        value={editingDevice ? editingDevice.serialNumber : newDevice.serialNumber}
+                        onChange={(e) =>
+                          editingDevice
+                            ? setEditingDevice({ ...editingDevice, serialNumber: e.target.value })
+                            : setNewDevice({ ...newDevice, serialNumber: e.target.value })
+                        }
+                      />
+                    </div>
+                    {/* Opcional: Agregar select para tankId si es necesario */}
                     <div className="flex space-x-2">
                       <Button
                         onClick={editingDevice ? updateDevice : addDevice}
@@ -770,7 +796,7 @@ export default function SensorsPage() {
                           variant="ghost"
                           onClick={() => {
                             setEditingDevice(null);
-                            setNewDevice({ id: 0, name: '' });
+                            setNewDevice({ id: 0, name: '', serialNumber: '' });
                           }}
                         >
                           Cancelar
