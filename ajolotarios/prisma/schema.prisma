@@ -216,15 +216,11 @@ enum Priority {
 
 // Reglas de medición
 model MeasurementRule {
-  id          Int       @id @default(autoincrement())
-  optimalMin  Decimal   @db.Decimal(10, 2)
-  optimalMax  Decimal   @db.Decimal(10, 2)
-  warningMin  Decimal   @db.Decimal(10, 2)
-  warningMax  Decimal   @db.Decimal(10, 2)
-  criticalMin Decimal   @db.Decimal(10, 2)
-  criticalMax Decimal   @db.Decimal(10, 2)
-  action      String    @db.Text
-  parameterId Int
-  parameter   Parameter @relation(fields: [parameterId], references: [id], onDelete: Cascade)
-  active      Boolean   @default(true)
+  id           Int       @id @default(autoincrement())
+  optimalMin   Decimal   @db.Decimal(10, 2)
+  optimalMax   Decimal   @db.Decimal(10, 2)
+  action       String    @db.Text
+  parameterId  Int
+  parameter    Parameter @relation(fields: [parameterId], references: [id], onDelete: Cascade)
+  active       Boolean   @default(true)
 }
