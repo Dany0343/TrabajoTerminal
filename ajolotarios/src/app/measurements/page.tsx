@@ -3,7 +3,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2 } from 'lucide-react';
+import { Plus, Edit, Trash2, Sliders } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -845,6 +845,14 @@ export default function MeasurementsPage() {
 
           <Button onClick={openAddDialog}>
             <Plus className="mr-2 h-4 w-4" /> Agregar Medición
+          </Button>
+
+          {/* Botón para Gestionar Parámetros */}
+          <Button
+            variant="secondary" // Puedes cambiar el variant según tu diseño
+            onClick={() => setIsManageParametersOpen(true)}
+          >
+            <Sliders className="mr-2 h-4 w-4" /> Gestionar Parámetros
           </Button>
         </div>
       </div>
