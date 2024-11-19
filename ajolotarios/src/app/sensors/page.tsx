@@ -57,6 +57,7 @@ type Device = {
   name: string;
   serialNumber: string;
   tankId?: number;
+  tank?: Tank;
 };
 
 type SensorType = {
@@ -65,11 +66,20 @@ type SensorType = {
   magnitude: string;
 };
 
+type Tank = {
+  id: number;
+  name: string;
+  // Otros campos relevantes...
+};
+
 export default function SensorsPage() {
   // Estado para Sensores
   const [sensors, setSensors] = useState<Sensor[]>([]);
   const [devices, setDevices] = useState<Device[]>([]);
   const [sensorTypes, setSensorTypes] = useState<SensorType[]>([]);
+  const [tanks, setTanks] = useState<Tank[]>([]); // Nuevo estado para Tanques
+
+  // Estado para nuevo Sensor
   const [newSensor, setNewSensor] = useState<
     Omit<Sensor, 'id' | 'device' | 'type'>
   >({
@@ -82,6 +92,8 @@ export default function SensorsPage() {
     calibratedAt: new Date().toISOString().slice(0, 16),
     nextCalibrationAt: new Date().toISOString().slice(0, 16),
   });
+
+  // Estados para diálogos
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -97,11 +109,11 @@ export default function SensorsPage() {
 
   // Estado para Gestión de Device
   const [isManageDeviceOpen, setIsManageDeviceOpen] = useState(false);
-    const [newDevice, setNewDevice] = useState<Device>({
+  const [newDevice, setNewDevice] = useState<Device>({
     id: 0,
     name: '',
     serialNumber: '',
-    tankId: 1, // Valor por defecto o puedes manejarlo con un select
+    tankId: undefined, // Inicializar como undefined
   });
   const [editingDevice, setEditingDevice] = useState<Device | null>(null);
 
@@ -122,6 +134,12 @@ export default function SensorsPage() {
     fetch('/api/sensor-types')
       .then((res) => res.json())
       .then((data) => setSensorTypes(data))
+      .catch((error) => console.error(error));
+
+    // Obtener Tanques
+    fetch('/api/tanks')
+      .then((res) => res.json())
+      .then((data) => setTanks(data))
       .catch((error) => console.error(error));
   }, []);
 
@@ -271,9 +289,9 @@ export default function SensorsPage() {
       const response = await fetch('/api/sensor-types', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          name: newSensorType.name, 
-          magnitude: newSensorType.magnitude 
+        body: JSON.stringify({
+          name: newSensorType.name,
+          magnitude: newSensorType.magnitude,
         }),
       });
       if (response.ok) {
@@ -301,9 +319,9 @@ export default function SensorsPage() {
       const response = await fetch(`/api/sensor-types/${editingSensorType.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          name: editingSensorType.name, 
-          magnitude: editingSensorType.magnitude 
+        body: JSON.stringify({
+          name: editingSensorType.name,
+          magnitude: editingSensorType.magnitude,
         }),
       });
       if (response.ok) {
@@ -351,12 +369,12 @@ export default function SensorsPage() {
 
   // Funciones CRUD para Device
 
-    const addDevice = async () => {
-    if (!newDevice.name || !newDevice.serialNumber) {
-      alert('El nombre y número de serie son obligatorios');
+  const addDevice = async () => {
+    if (!newDevice.name || !newDevice.serialNumber || !newDevice.tankId) {
+      alert('El nombre, número de serie y tanque son obligatorios');
       return;
     }
-  
+
     try {
       const response = await fetch('/api/devices', {
         method: 'POST',
@@ -364,13 +382,20 @@ export default function SensorsPage() {
         body: JSON.stringify({
           name: newDevice.name,
           serialNumber: newDevice.serialNumber,
-          tankId: newDevice.tankId || 1, // Asegúrate de manejar esto apropiadamente
+          tankId: newDevice.tankId,
         }),
       });
       if (response.ok) {
         const createdDevice = await response.json();
         setDevices([...devices, createdDevice]);
-        setNewDevice({ id: 0, name: '', serialNumber: '' });
+        setIsManageDeviceOpen(false);
+        // Restablecer formulario
+        setNewDevice({
+          id: 0,
+          name: '',
+          serialNumber: '',
+          tankId: undefined,
+        });
         alert('Dispositivo agregado exitosamente');
       } else {
         const errorText = await response.text();
@@ -381,13 +406,13 @@ export default function SensorsPage() {
       alert('Error al crear el dispositivo');
     }
   };
-  
+
   const updateDevice = async () => {
-    if (!editingDevice || !editingDevice.name || !editingDevice.serialNumber) {
-      alert('El nombre y número de serie son obligatorios');
+    if (!editingDevice || !editingDevice.name || !editingDevice.serialNumber || !editingDevice.tankId) {
+      alert('El nombre, número de serie y tanque son obligatorios');
       return;
     }
-  
+
     try {
       const response = await fetch(`/api/devices/${editingDevice.id}`, {
         method: 'PUT',
@@ -395,7 +420,7 @@ export default function SensorsPage() {
         body: JSON.stringify({
           name: editingDevice.name,
           serialNumber: editingDevice.serialNumber,
-          tankId: editingDevice.tankId || 1, // Asegúrate de manejar esto apropiadamente
+          tankId: editingDevice.tankId,
         }),
       });
       if (response.ok) {
@@ -404,7 +429,12 @@ export default function SensorsPage() {
           devices.map((device) => (device.id === updatedDevice.id ? updatedDevice : device))
         );
         setEditingDevice(null);
-        setNewDevice({ id: 0, name: '', serialNumber: '' });
+        setNewDevice({
+          id: 0,
+          name: '',
+          serialNumber: '',
+          tankId: undefined,
+        });
         alert('Dispositivo actualizado exitosamente');
       } else {
         const errorText = await response.text();
@@ -438,7 +468,13 @@ export default function SensorsPage() {
 
   const startEditingDevice = (device: Device) => {
     setEditingDevice(device);
-    setNewDevice(device);
+    setNewDevice({
+      id: device.id,
+      name: device.name,
+      serialNumber: device.serialNumber,
+      tankId: device.tankId,
+    });
+    setIsEditDialogOpen(true);
   };
 
   return (
@@ -546,8 +582,10 @@ export default function SensorsPage() {
                     </SelectContent>
                   </Select>
                 </div>
-                {/* Fechas */}
-                {/* <div className="grid grid-cols-4 items-center gap-4">
+                {/* Fechas (Opcional) */}
+                {/* Puedes descomentar y utilizar si es necesario */}
+                {/* 
+                <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="lastConnection" className="text-right">Última Conexión</Label>
                   <Input
                     id="lastConnection"
@@ -576,7 +614,8 @@ export default function SensorsPage() {
                     onChange={(e) => setNewSensor({ ...newSensor, nextCalibrationAt: e.target.value })}
                     className="col-span-3"
                   />
-                </div> */}
+                </div>
+                */}
               </div>
               <Button onClick={addSensor}>Agregar Sensor</Button>
             </DialogContent>
@@ -707,115 +746,180 @@ export default function SensorsPage() {
           <Dialog open={isManageDeviceOpen} onOpenChange={setIsManageDeviceOpen}>
             <DialogTrigger asChild>
               <Button>
-                <Plus className="mr-2 h-4 w-4" /> Gestionar Dispositivos
+                <Plus className="mr-2 h-4 w-4" /> Agregar Dispositivo
               </Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Gestionar Dispositivos</DialogTitle>
+                <DialogTitle>Agregar Nuevo Dispositivo</DialogTitle>
               </DialogHeader>
               <div className="grid gap-4 py-4">
-                {/* Tabla de Dispositivos */}
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>ID</TableHead>
-                      <TableHead>Nombre</TableHead>
-                      <TableHead>Acciones</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {devices.map((device) => (
-                      <TableRow key={device.id}>
-                        <TableCell>{device.id}</TableCell>
-                        <TableCell>{device.name}</TableCell>
-                        <TableCell>
-                          <div className="flex space-x-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => startEditingDevice(device)}
-                            >
-                              <Edit className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="destructive"
-                              size="sm"
-                              onClick={() => deleteDevice(device.id)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-
-                {/* Formulario para Agregar/Editar Device */}
-                <div className="mt-4">
-                  <h3 className="text-xl font-semibold">
-                    {editingDevice ? 'Editar Dispositivo' : 'Agregar Nuevo Dispositivo'}
-                  </h3>
-                  <div className="grid grid-cols-1 gap-4 mt-2">
-                    <div>
-                      <Label htmlFor="deviceName">Nombre</Label>
-                      <Input
-                        id="deviceName"
-                        type="text"
-                        value={editingDevice ? editingDevice.name : newDevice.name}
-                        onChange={(e) =>
-                          editingDevice
-                            ? setEditingDevice({ ...editingDevice, name: e.target.value })
-                            : setNewDevice({ ...newDevice, name: e.target.value })
-                        }
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="serialNumber">Número de Serie</Label>
-                      <Input
-                        id="serialNumber"
-                        type="text"
-                        value={editingDevice ? editingDevice.serialNumber : newDevice.serialNumber}
-                        onChange={(e) =>
-                          editingDevice
-                            ? setEditingDevice({ ...editingDevice, serialNumber: e.target.value })
-                            : setNewDevice({ ...newDevice, serialNumber: e.target.value })
-                        }
-                      />
-                    </div>
-                    {/* Opcional: Agregar select para tankId si es necesario */}
-                    <div className="flex space-x-2">
-                      <Button
-                        onClick={editingDevice ? updateDevice : addDevice}
-                      >
-                        {editingDevice ? 'Actualizar Dispositivo' : 'Agregar Dispositivo'}
-                      </Button>
-                      {editingDevice && (
-                        <Button
-                          variant="ghost"
-                          onClick={() => {
-                            setEditingDevice(null);
-                            setNewDevice({ id: 0, name: '', serialNumber: '' });
-                          }}
-                        >
-                          Cancelar
-                        </Button>
-                      )}
-                    </div>
-                  </div>
+                {/* Nombre */}
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="deviceName" className="text-right">Nombre</Label>
+                  <Input
+                    id="deviceName"
+                    type="text"
+                    value={newDevice.name}
+                    onChange={(e) =>
+                      setNewDevice({ ...newDevice, name: e.target.value })
+                    }
+                    className="col-span-3"
+                  />
+                </div>
+                {/* Número de Serie */}
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="serialNumber" className="text-right">Número de Serie</Label>
+                  <Input
+                    id="serialNumber"
+                    type="text"
+                    value={newDevice.serialNumber}
+                    onChange={(e) =>
+                      setNewDevice({ ...newDevice, serialNumber: e.target.value })
+                    }
+                    className="col-span-3"
+                  />
+                </div>
+                {/* Tanque */}
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="tankId" className="text-right">Tanque</Label>
+                  <Select
+                    onValueChange={(value) => setNewDevice({ ...newDevice, tankId: Number(value) })}
+                    value={newDevice.tankId ? newDevice.tankId.toString() : ''}
+                  >
+                    <SelectTrigger className="col-span-3">
+                      <SelectValue placeholder="Selecciona un tanque" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {tanks.map((tank) => (
+                        <SelectItem key={tank.id} value={tank.id.toString()}>
+                          {tank.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
-              <div className="flex justify-end">
-                <Button onClick={() => setIsManageDeviceOpen(false)}>Cerrar</Button>
-              </div>
+              <Button onClick={addDevice}>Agregar Dispositivo</Button>
             </DialogContent>
           </Dialog>
         </div>
       </div>
 
-      {/* Tabla de Sensores */}
+      {/* Tabla de Dispositivos */}
       <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>ID</TableHead>
+            <TableHead>Nombre</TableHead>
+            <TableHead>Número de Serie</TableHead>
+            <TableHead>Tanque</TableHead>
+            <TableHead>Acciones</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {devices.map((device) => (
+            <TableRow key={device.id}>
+              <TableCell>{device.id}</TableCell>
+              <TableCell>{device.name}</TableCell>
+              <TableCell>{device.serialNumber}</TableCell>
+              <TableCell>{device.tank?.name || 'N/A'}</TableCell> {/* Mostrar nombre del tanque */}
+              <TableCell>
+                <div className="flex space-x-2">
+                  {/* Botón para Editar Dispositivo */}
+                  <Dialog
+                    open={isEditDialogOpen && editingId === device.id}
+                    onOpenChange={(open) => {
+                      if (!open) {
+                        setIsEditDialogOpen(false);
+                        setEditingId(null);
+                        setEditingDevice(null);
+                        // Restablecer formulario
+                        setNewDevice({
+                          id: 0,
+                          name: '',
+                          serialNumber: '',
+                          tankId: undefined,
+                        });
+                      }
+                    }}
+                  >
+                    <DialogTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => startEditingDevice(device)}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Editar Dispositivo</DialogTitle>
+                      </DialogHeader>
+                      <div className="grid gap-4 py-4">
+                        {/* Nombre */}
+                        <div className="grid grid-cols-4 items-center gap-4">
+                          <Label htmlFor="deviceName" className="text-right">Nombre</Label>
+                          <Input
+                            id="deviceName"
+                            type="text"
+                            value={newDevice.name}
+                            onChange={(e) => setNewDevice({ ...newDevice, name: e.target.value })}
+                            className="col-span-3"
+                          />
+                        </div>
+                        {/* Número de Serie */}
+                        <div className="grid grid-cols-4 items-center gap-4">
+                          <Label htmlFor="serialNumber" className="text-right">Número de Serie</Label>
+                          <Input
+                            id="serialNumber"
+                            type="text"
+                            value={newDevice.serialNumber}
+                            onChange={(e) => setNewDevice({ ...newDevice, serialNumber: e.target.value })}
+                            className="col-span-3"
+                          />
+                        </div>
+                        {/* Tanque */}
+                        <div className="grid grid-cols-4 items-center gap-4">
+                          <Label htmlFor="tankId" className="text-right">Tanque</Label>
+                          <Select
+                            onValueChange={(value) => setNewDevice({ ...newDevice, tankId: Number(value) })}
+                            value={newDevice.tankId ? newDevice.tankId.toString() : ''}
+                          >
+                            <SelectTrigger className="col-span-3">
+                              <SelectValue placeholder="Selecciona un tanque" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {tanks.map((tank) => (
+                                <SelectItem key={tank.id} value={tank.id.toString()}>
+                                  {tank.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      <Button onClick={updateDevice}>Actualizar Dispositivo</Button>
+                    </DialogContent>
+                  </Dialog>
+                  {/* Botón para Eliminar Dispositivo */}
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => deleteDevice(device.id)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+
+      {/* Tabla de Sensores */}
+      <Table className="mt-8">
         <TableHeader>
           <TableRow>
             <TableHead>Modelo</TableHead>
@@ -893,7 +997,6 @@ export default function SensorsPage() {
                             className="col-span-3"
                           />
                         </div>
-                        {/* Magnitud: Eliminado */}
                         {/* Tipo de Sensor */}
                         <div className="grid grid-cols-4 items-center gap-4">
                           <Label htmlFor="typeId" className="text-right">Tipo de Sensor</Label>
