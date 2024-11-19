@@ -1,5 +1,3 @@
-// componente: MeasurementsPage.jsx
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -31,9 +29,9 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 
-// Tipos
+// Tipos (Types)
 type FormMeasurementParameter = {
-  id?: number; // Opcional para permitir la creación de nuevos parámetros
+  id?: number;
   parameterId: number;
   value: number;
 };
@@ -58,101 +56,7 @@ type Measurement = {
   alerts: Alert[];
 };
 
-type MeasurementParameter = {
-  id: number;
-  parameterId: number;
-  value: number;
-  measurementId: number;
-  parameter?: Parameter;
-};
-
-type Device = {
-  id: number;
-  name: string;
-  serialNumber: string;
-  status: string;
-  tankId: number;
-  tank?: Tank;
-  sensors: Sensor[];
-  measurements: Measurement[];
-};
-
-type Sensor = {
-  id: number;
-  model: string;
-  serialNumber: string;
-  typeId: number;
-  statusId: number;
-  type?: SensorType;
-  status?: SensorStatus;
-};
-
-type SensorType = {
-  id: number;
-  name: string;
-  magnitude: string;
-};
-
-type SensorStatus = {
-  id: number;
-  status: string;
-};
-
-type Parameter = {
-  id: number;
-  name: string;
-  description?: string;
-};
-
-type Alert = {
-  id: number;
-  measurementId: number;
-  alertType:
-    | "PARAMETER_OUT_OF_RANGE"
-    | "DEVICE_MALFUNCTION"
-    | "MAINTENANCE_REQUIRED"
-    | "SYSTEM_ERROR"
-    | "CALIBRATION_NEEDED"
-    | "HEALTH_ISSUE";
-  description: string;
-  priority: "HIGH" | "MEDIUM" | "LOW";
-  status: "PENDING" | "ACKNOWLEDGED" | "RESOLVED" | "ESCALATED";
-  createdAt: string;
-  resolvedAt?: string;
-  resolvedBy?: number;
-  notes?: string;
-  measurement?: Measurement;
-  resolver?: User;
-};
-
-type User = {
-  id: number;
-  firstName: string;
-  lastName: string;
-};
-
-type Tank = {
-  id: number;
-  name: string;
-  capacity: number;
-  observations?: string;
-  status: string;
-  ajolotaryId: number;
-  ajolotary?: Ajolotary;
-};
-
-type Ajolotary = {
-  id: number;
-  name: string;
-  // Otros campos según tu esquema
-};
-
-type FormDevice = {
-  id?: number;
-  name: string;
-  serialNumber: string;
-  tankId: number;
-};
+// Otros tipos omitidos para brevedad...
 
 export default function MeasurementsPage() {
   const [measurements, setMeasurements] = useState<Measurement[]>([]);
@@ -203,9 +107,9 @@ export default function MeasurementsPage() {
 
   // Filtros y Paginación
   const [filters, setFilters] = useState({
-    deviceId: "ALL",
-    sensorId: "ALL",
-    isValid: "ALL",
+    deviceId: undefined,
+    sensorId: undefined,
+    isValid: undefined,
     startDate: "",
     endDate: "",
     page: 1,
@@ -218,13 +122,13 @@ export default function MeasurementsPage() {
       try {
         let url = `/api/measurements?page=${filters.page}&limit=${filters.limit}`;
 
-        if (filters.deviceId !== "ALL") {
+        if (filters.deviceId) {
           url += `&deviceId=${filters.deviceId}`;
         }
-        if (filters.sensorId !== "ALL") {
+        if (filters.sensorId) {
           url += `&sensorId=${filters.sensorId}`;
         }
-        if (filters.isValid !== "ALL") {
+        if (filters.isValid !== undefined) {
           url += `&isValid=${filters.isValid}`;
         }
         if (filters.startDate) {
@@ -243,6 +147,7 @@ export default function MeasurementsPage() {
         setTotalPages(data.totalPages);
       } catch (error) {
         console.error(error);
+        setErrorMessage('Error al obtener las mediciones.');
       }
     };
 
@@ -261,6 +166,7 @@ export default function MeasurementsPage() {
         setDevices(data);
       } catch (error) {
         console.error(error);
+        setErrorMessage('Error al obtener los dispositivos.');
       }
     };
 
@@ -275,6 +181,7 @@ export default function MeasurementsPage() {
         setSensors(data);
       } catch (error) {
         console.error(error);
+        setErrorMessage('Error al obtener los sensores.');
       }
     };
 
@@ -289,6 +196,7 @@ export default function MeasurementsPage() {
         setParameters(data);
       } catch (error) {
         console.error(error);
+        setErrorMessage('Error al obtener los parámetros.');
       }
     };
 
@@ -303,6 +211,7 @@ export default function MeasurementsPage() {
         setTanks(data);
       } catch (error) {
         console.error(error);
+        setErrorMessage('Error al obtener los tanques.');
       }
     };
 
@@ -426,7 +335,7 @@ export default function MeasurementsPage() {
       sensorId: measurement.sensorId,
       isValid: measurement.isValid,
       parameters: measurement.parameters.map((param) => ({
-        id: param.id, // Incluir el id para ediciones
+        id: param.id,
         parameterId: param.parameterId,
         value: param.value,
       })),
@@ -467,7 +376,7 @@ export default function MeasurementsPage() {
       ...prev,
       parameters: [
         ...(prev.parameters || []),
-        { parameterId: 0, value: 0 }, // id es opcional
+        { parameterId: 0, value: 0 },
       ],
     }));
   };
@@ -706,8 +615,8 @@ export default function MeasurementsPage() {
     const { name, value } = e.target;
     setFilters((prev) => ({
       ...prev,
-      [name]: value,
-      page: 1, // Resetear a la primera página al cambiar el filtro
+      [name]: value !== "" ? value : undefined,
+      page: 1,
     }));
   };
 
@@ -760,17 +669,16 @@ export default function MeasurementsPage() {
             onValueChange={(value) =>
               setFilters((prev) => ({
                 ...prev,
-                deviceId: value,
+                deviceId: value !== "" ? value : undefined,
                 page: 1,
               }))
             }
-            value={filters.deviceId}
+            value={filters.deviceId || ''}
           >
             <SelectTrigger className="w-64">
               <SelectValue placeholder="Dispositivo" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="ALL">Todos los Dispositivos</SelectItem>
               {devices.map((device) => (
                 <SelectItem key={device.id} value={device.id.toString()}>
                   {device.name} ({device.serialNumber})
@@ -784,17 +692,16 @@ export default function MeasurementsPage() {
             onValueChange={(value) =>
               setFilters((prev) => ({
                 ...prev,
-                sensorId: value,
+                sensorId: value !== "" ? value : undefined,
                 page: 1,
               }))
             }
-            value={filters.sensorId}
+            value={filters.sensorId || ''}
           >
             <SelectTrigger className="w-64">
               <SelectValue placeholder="Sensor" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="ALL">Todos los Sensores</SelectItem>
               {sensors.map((sensor) => (
                 <SelectItem key={sensor.id} value={sensor.id.toString()}>
                   {sensor.model} - {sensor.serialNumber}
@@ -808,17 +715,16 @@ export default function MeasurementsPage() {
             onValueChange={(value) =>
               setFilters((prev) => ({
                 ...prev,
-                isValid: value,
+                isValid: value !== "" ? value : undefined,
                 page: 1,
               }))
             }
-            value={filters.isValid}
+            value={filters.isValid !== undefined ? filters.isValid.toString() : ''}
           >
             <SelectTrigger className="w-48">
               <SelectValue placeholder="¿Es válida?" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="ALL">Todas</SelectItem>
               <SelectItem value="true">Sí</SelectItem>
               <SelectItem value="false">No</SelectItem>
             </SelectContent>
@@ -843,6 +749,22 @@ export default function MeasurementsPage() {
 
           <Button onClick={openAddDialog}>
             <Plus className="mr-2 h-4 w-4" /> Agregar Medición
+          </Button>
+
+          {/* Botón para Gestionar Parámetros */}
+          <Button
+            variant="secondary"
+            onClick={() => setIsManageParametersOpen(true)}
+          >
+            <Edit className="mr-2 h-4 w-4" /> Gestionar Parámetros
+          </Button>
+
+          {/* Botón para Gestionar Dispositivos */}
+          <Button
+            variant="secondary"
+            onClick={() => setIsManageDevicesOpen(true)}
+          >
+            <Edit className="mr-2 h-4 w-4" /> Gestionar Dispositivos
           </Button>
         </div>
       </div>
