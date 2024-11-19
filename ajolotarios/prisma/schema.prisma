@@ -138,11 +138,12 @@ model MeasurementParameter {
 // Modelo de Parámetro
 model Parameter {
   id               Int                    @id @default(autoincrement())
-  name             String                 @db.VarChar(50)
+  name             String                 @unique @db.VarChar(50)
   description      String?                @db.Text
   measurementRules MeasurementRule[]
   measurements     MeasurementParameter[]
 }
+
 
 
 // Gestión de ajolotes
@@ -217,10 +218,11 @@ enum Priority {
 // Reglas de medición
 model MeasurementRule {
   id           Int       @id @default(autoincrement())
-  optimalMin   Decimal   @db.Decimal(10, 2)
-  optimalMax   Decimal   @db.Decimal(10, 2)
+  optimalMin   Decimal?  @db.Decimal(10, 2)
+  optimalMax   Decimal?  @db.Decimal(10, 2)
   action       String    @db.Text
-  parameterId  Int
+  parameterId  Int       @unique
   parameter    Parameter @relation(fields: [parameterId], references: [id], onDelete: Cascade)
   active       Boolean   @default(true)
 }
+
