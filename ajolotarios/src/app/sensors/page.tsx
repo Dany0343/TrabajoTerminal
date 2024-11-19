@@ -36,6 +36,7 @@ import {
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 
+// Definición de tipos
 type SensorStatus = 'ACTIVE' | 'INACTIVE' | 'FAULTY' | 'CALIBRATING';
 
 type Sensor = {
@@ -57,7 +58,7 @@ type Device = {
   name: string;
   serialNumber: string;
   tankId?: number;
-  tank?: Tank;
+  tank?: Tank; // Relación con Tank
 };
 
 type SensorType = {
@@ -73,7 +74,7 @@ type Tank = {
 };
 
 export default function SensorsPage() {
-  // Estado para Sensores
+  // Estados para Sensores, Dispositivos, Tipos de Sensor y Tanques
   const [sensors, setSensors] = useState<Sensor[]>([]);
   const [devices, setDevices] = useState<Device[]>([]);
   const [sensorTypes, setSensorTypes] = useState<SensorType[]>([]);
@@ -93,7 +94,7 @@ export default function SensorsPage() {
     nextCalibrationAt: new Date().toISOString().slice(0, 16),
   });
 
-  // Estados para diálogos
+  // Estados para diálogos de Sensores
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -103,7 +104,7 @@ export default function SensorsPage() {
   const [newSensorType, setNewSensorType] = useState<SensorType>({
     id: 0,
     name: '',
-    magnitude: '', // Inicializar magnitud
+    magnitude: '',
   });
   const [editingSensorType, setEditingSensorType] = useState<SensorType | null>(null);
 
@@ -474,7 +475,7 @@ export default function SensorsPage() {
       serialNumber: device.serialNumber,
       tankId: device.tankId,
     });
-    setIsEditDialogOpen(true);
+    setIsEditDialogOpen(true); // Asegúrate de definir este estado
   };
 
   return (
@@ -828,13 +829,10 @@ export default function SensorsPage() {
                 <div className="flex space-x-2">
                   {/* Botón para Editar Dispositivo */}
                   <Dialog
-                    open={isEditDialogOpen && editingId === device.id}
+                    open={editingDevice?.id === device.id}
                     onOpenChange={(open) => {
                       if (!open) {
-                        setIsEditDialogOpen(false);
-                        setEditingId(null);
                         setEditingDevice(null);
-                        // Restablecer formulario
                         setNewDevice({
                           id: 0,
                           name: '',
