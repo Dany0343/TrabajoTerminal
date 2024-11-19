@@ -752,7 +752,7 @@ export default function SensorsPage() {
                   </TableBody>
                 </Table>
 
-                                {/* Formulario para Agregar/Editar Device */}
+                {/* Formulario para Agregar/Editar Device */}
                 <div className="mt-4">
                   <h3 className="text-xl font-semibold">
                     {editingDevice ? 'Editar Dispositivo' : 'Agregar Nuevo Dispositivo'}
