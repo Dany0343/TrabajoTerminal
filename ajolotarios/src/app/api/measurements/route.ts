@@ -1,6 +1,7 @@
 // app/api/measurements/route.ts
 
 import { NextResponse } from 'next/server';
+import { AlertType, Priority as AlertPriority, AlertStatus } from '@prisma/client';
 import db from '@/lib/db';
 
 export async function GET(request: Request) {
@@ -81,132 +82,110 @@ export async function GET(request: Request) {
   }
 }
 
+
 export async function POST(request: Request) {
   try {
     const data = await request.json();
     const { deviceId, sensorId, dateTime, isValid, parameters } = data;
 
-    // Validación de campos requeridos
     if (!deviceId || !sensorId || !parameters || !Array.isArray(parameters)) {
       return new NextResponse('Faltan campos requeridos o el formato es incorrecto', { status: 400 });
     }
 
-    // Validar existencia de dispositivo y sensor
-    const device = await db.device.findUnique({ where: { id: deviceId } });
+    const [device, sensor] = await Promise.all([
+      db.device.findUnique({ where: { id: deviceId } }),
+      db.sensor.findUnique({ where: { id: sensorId } })
+    ]);
+
     if (!device) {
       return new NextResponse('Dispositivo no encontrado', { status: 404 });
     }
-
-    const sensor = await db.sensor.findUnique({ where: { id: sensorId } });
     if (!sensor) {
       return new NextResponse('Sensor no encontrado', { status: 404 });
     }
 
-    // Crear la medición
     const measurement = await db.measurement.create({
       data: {
         deviceId,
         sensorId,
-        dateTime: dateTime ? new Date(dateTime) : undefined,
+        dateTime: dateTime ? new Date(dateTime) : new Date(),
         isValid: isValid ?? true,
         parameters: {
           create: parameters.map((param: { parameterId: number; value: number }) => ({
             parameterId: param.parameterId,
-            value: param.value,
+            value: Number(param.value),
           })),
         },
       },
       include: {
         device: true,
-        sensor: {
-          include: {
-            type: true,
-          },
-        },
-        parameters: {
-          include: {
-            parameter: true,
-          },
-        },
+        sensor: { include: { type: true } },
+        parameters: { include: { parameter: true } },
         alerts: true,
       },
     });
 
-    // --- Lógica para Evaluar Parámetros y Crear Alertas ---
-
-    // Obtener todas las reglas activas para los parámetros de esta medición
-    const parameterIds = parameters.map((param: { parameterId: number }) => param.parameterId);
     const rules = await db.measurementRule.findMany({
       where: {
-        parameterId: { in: parameterIds },
+        parameterId: { in: parameters.map(p => p.parameterId) },
         active: true,
       },
-      include: {
-        parameter: true,
-      },
+      include: { parameter: true },
     });
 
-    const alertsToCreate = [];
-
-    for (const param of parameters) {
+    const alertsToCreate = parameters.reduce<any[]>((alerts, param) => {
       const rule = rules.find(r => r.parameterId === param.parameterId);
-      if (!rule) continue; // No hay regla definida para este parámetro
+      if (!rule) return alerts;
 
+      const paramValue = Number(param.value);
+      const minValue = rule.optimalMin ? Number(rule.optimalMin) : null;
+      const maxValue = rule.optimalMax ? Number(rule.optimalMax) : null;
+      
       let outOfRange = false;
       let description = '';
 
-      if (rule.optimalMin !== null && param.value < Number(rule.optimalMin)) {
+      if (minValue !== null && paramValue < minValue) {
         outOfRange = true;
-        description += `${rule.parameter.name} (${param.value}) está por debajo del mínimo (${rule.optimalMin}). `;
+        description += `${rule.parameter.name} (${paramValue}) está por debajo del mínimo (${minValue}). `;
       }
-
-      if (rule.optimalMax !== null && param.value > Number(rule.optimalMax)) {
+      if (maxValue !== null && paramValue > maxValue) {
         outOfRange = true;
-        description += `${rule.parameter.name} (${param.value}) está por encima del máximo (${rule.optimalMax}). `;
+        description += `${rule.parameter.name} (${paramValue}) está por encima del máximo (${maxValue}). `;
       }
 
       if (outOfRange) {
-        alertsToCreate.push({
+        alerts.push({
           measurementId: measurement.id,
-          alertType: AlertType.PARAMETER_OUT_OF_RANGE, // Uso del enum
+          alertType: AlertType.PARAMETER_OUT_OF_RANGE,
           description: description.trim(),
-          priority: AlertPriority.HIGH, // Uso del enum
-          status: AlertStatus.PENDING, // Uso del enum
+          priority: AlertPriority.HIGH,
+          status: AlertStatus.PENDING,
         });
       }
-    }
+
+      return alerts;
+    }, []);
 
     if (alertsToCreate.length > 0) {
-      // Crear múltiples alertas en una sola operación
-      await db.alert.createMany({
-        data: alertsToCreate,
-      });
+      await db.alert.createMany({ data: alertsToCreate });
     }
 
-    // --- Fin de la Lógica ---
-
-    // Obtener la medición actualizada con las alertas
     const updatedMeasurement = await db.measurement.findUnique({
       where: { id: measurement.id },
       include: {
         device: true,
-        sensor: {
-          include: {
-            type: true,
-          },
-        },
-        parameters: {
-          include: {
-            parameter: true,
-          },
-        },
+        sensor: { include: { type: true } },
+        parameters: { include: { parameter: true } },
         alerts: true,
       },
     });
 
     return NextResponse.json(updatedMeasurement, { status: 201 });
   } catch (error) {
-    console.error(error);
-    return new NextResponse('Error al crear la medición', { status: 500 });
+    console.error('Error detallado:', error);
+    return new NextResponse(
+      `Error al crear la medición: ${error instanceof Error ? error.message : 'Error desconocido'}`,
+      { status: 500 }
+    );
   }
 }
