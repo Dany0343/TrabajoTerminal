@@ -2,7 +2,6 @@
 import { NextResponse } from 'next/server';
 import db from '@/lib/db';
 
-// Mantén el POST existente
 export async function POST(req: Request) {
   try {
     const { name, magnitude } = await req.json();
@@ -43,4 +42,25 @@ export async function GET() {
       { status: 500 }
     );
   }
+}
+
+// Agregar el método PUT
+export async function PUT(
+  request: Request,
+  { params }: { params: { id: string } }
+) {
+  const id = parseInt(params.id);
+  const data = await request.json();
+  const { name, magnitude } = data;
+  if (!name || !magnitude) {
+    return new NextResponse(
+      'Nombre y magnitud son requeridos',
+      { status: 400 }
+    );
+  }
+  const updatedType = await db.sensorType.update({
+    where: { id },
+    data: { name, magnitude },
+  });
+  return NextResponse.json(updatedType);
 }
