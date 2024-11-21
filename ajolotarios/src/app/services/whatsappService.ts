@@ -125,11 +125,9 @@ Por favor, revisa el sistema lo antes posible.`;
 
   // Add test function
   async testConnection() {
-    const url = `${this.baseUrl}/${this.apiVersion}/${this.phoneNumberId}/messages`;
-    console.log('Testing connection to:', url);
-
     try {
-      const response = await fetch(url, {
+      // First try with template message
+      const templateResponse = await fetch(`${this.baseUrl}/${this.apiVersion}/${this.phoneNumberId}/messages`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${this.token}`,
@@ -138,16 +136,43 @@ Por favor, revisa el sistema lo antes posible.`;
         body: JSON.stringify({
           messaging_product: 'whatsapp',
           to: this.recipientNumber,
-          type: 'text',
-          text: { 
-            body: '🧪 Test message from AjoloApp at ' + new Date().toLocaleString() 
+          type: 'template',
+          template: {
+            name: 'hello_world',
+            language: {
+              code: 'en_US'
+            }
           }
         })
       });
-
-      const data = await response.json();
-      console.log('WhatsApp response:', data);
-      return data;
+  
+      const templateResult = await templateResponse.json();
+      console.log('Template response:', templateResult);
+  
+      // If template works, try text message
+      if (templateResult.messages?.[0]?.id) {
+        const textResponse = await fetch(`${this.baseUrl}/${this.apiVersion}/${this.phoneNumberId}/messages`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${this.token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            messaging_product: 'whatsapp',
+            recipient_type: 'individual',
+            to: this.recipientNumber,
+            type: 'text',
+            text: { 
+              preview_url: false,
+              body: `🧪 AjoloApp Test (${new Date().toLocaleString()})` 
+            }
+          })
+        });
+  
+        return await textResponse.json();
+      }
+  
+      return templateResult;
     } catch (error) {
       console.error('Test failed:', error);
       throw error;
