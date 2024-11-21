@@ -4,12 +4,8 @@ import { WhatsAppService } from '@/app/services/whatsappService';
 
 export async function GET() {
   try {
-    console.log('Testing WhatsApp connection...');
     const service = new WhatsAppService();
-    
-    // Send a more obvious test message
-    const result = await service.sendTestMessage('🚨 Test Alert from AjoloApp - ' + new Date().toLocaleString());
-    console.log('WhatsApp response:', result);
+    const result = await service.testConnection();
     
     return NextResponse.json({
       success: true,
@@ -17,10 +13,10 @@ export async function GET() {
       timestamp: new Date().toISOString()
     });
   } catch (error) {
-    console.error('WhatsApp test failed:', error);
+    console.error('Test failed:', error);
     return NextResponse.json({ 
       success: false, 
-      error: (error instanceof Error) ? error.message : 'Unknown error'
+      error: (error as Error).message 
     }, { status: 500 });
   }
 }

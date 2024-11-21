@@ -125,39 +125,31 @@ Por favor, revisa el sistema lo antes posible.`;
 
   // Add test function
   async testConnection() {
+    const url = `${this.baseUrl}/${this.apiVersion}/${this.phoneNumberId}/messages`;
+    console.log('Testing connection to:', url);
+
     try {
-      const testMessage = '🧪 Test message from AjoloApp';
-      console.log('Sending test message...');
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${this.token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          messaging_product: 'whatsapp',
+          to: this.recipientNumber,
+          type: 'text',
+          text: { 
+            body: '🧪 Test message from AjoloApp at ' + new Date().toLocaleString() 
+          }
+        })
+      });
 
-      const url = `${this.baseUrl}/${this.apiVersion}/${this.phoneNumberId}/messages`;
-      console.log('Test message URL:', url);
-      
-      const response = await fetch(
-        `${url}`,
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${this.token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            messaging_product: 'whatsapp',
-            recipient_type: 'individual',
-            to: this.recipientNumber,
-            type: 'text',
-            text: { 
-              preview_url: false,
-              body: testMessage 
-            }
-          }),
-        }
-      );
-
-      const result = await response.json();
-      console.log('Test message result:', result);
-      return result;
+      const data = await response.json();
+      console.log('WhatsApp response:', data);
+      return data;
     } catch (error) {
-      console.error('Test message failed:', error);
+      console.error('Test failed:', error);
       throw error;
     }
   }
