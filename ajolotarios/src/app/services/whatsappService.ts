@@ -26,7 +26,21 @@ export class WhatsAppService {
     this.token = process.env.META_TOKEN || '';
     this.phoneNumberId = process.env.META_PHONE_NUMBER_ID || '';
     this.recipientNumber = process.env.META_RECIPIENT_NUMBER || '';
+
+
+    // Add configuration validation logs
+    console.log('WhatsApp Service Configuration:', {
+      tokenLength: this.token.length,
+      phoneNumberId: this.phoneNumberId,
+      recipientNumber: this.recipientNumber,
+      hasToken: !!this.token,
+      hasPhoneId: !!this.phoneNumberId,
+      hasRecipient: !!this.recipientNumber
+    });
+
   }
+
+  
 
   private formatAlertMessage(alertInfo: AlertInfo): string {
     const { alert, deviceInfo, parameter, value } = alertInfo;
@@ -85,6 +99,42 @@ Por favor, revisa el sistema lo antes posible.`;
       return await response.json();
     } catch (error) {
       console.error('Error enviando notificación:', error);
+      throw error;
+    }
+  }
+
+  // Add test function
+  async testConnection() {
+    try {
+      const testMessage = '🧪 Test message from AjoloApp';
+      console.log('Sending test message...');
+      
+      const response = await fetch(
+        `${this.baseUrl}/${this.apiVersion}/${this.phoneNumberId}/messages`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${this.token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            messaging_product: 'whatsapp',
+            recipient_type: 'individual',
+            to: this.recipientNumber,
+            type: 'text',
+            text: { 
+              preview_url: false,
+              body: testMessage 
+            }
+          }),
+        }
+      );
+
+      const result = await response.json();
+      console.log('Test message result:', result);
+      return result;
+    } catch (error) {
+      console.error('Test message failed:', error);
       throw error;
     }
   }
