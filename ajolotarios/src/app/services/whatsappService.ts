@@ -40,8 +40,6 @@ export class WhatsAppService {
 
   }
 
-  
-
   private formatAlertMessage(alertInfo: AlertInfo): string {
     const { alert, deviceInfo, parameter, value } = alertInfo;
     
@@ -67,11 +65,41 @@ Por favor, revisa el sistema lo antes posible.`;
 
   async sendAlertNotification(alertInfo: AlertInfo) {
     const message = this.formatAlertMessage(alertInfo);
+    const url = `${this.baseUrl}/${this.apiVersion}/${this.phoneNumberId}/messages`;
+    
+    console.log('Request details:', {
+      url,
+      token: this.token.substring(0, 20) + '...',
+      recipient: this.recipientNumber
+    });
 
     try {
-      const response = await fetch(
-        `${this.baseUrl}/${this.apiVersion}/${this.phoneNumberId}/messages`,
-        {
+      // Using template message first to verify connection
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${this.token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          messaging_product: 'whatsapp',
+          to: this.recipientNumber,
+          type: 'template',
+          template: {
+            name: 'hello_world',
+            language: {
+              code: 'en_US'
+            }
+          }
+        })
+      });
+
+      const data = await response.json();
+      console.log('Template message response:', data);
+
+      if (data.messages?.[0]?.id) {
+        // If template works, send actual message
+        const messageResponse = await fetch(url, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${this.token}`,
@@ -79,26 +107,18 @@ Por favor, revisa el sistema lo antes posible.`;
           },
           body: JSON.stringify({
             messaging_product: 'whatsapp',
-            recipient_type: 'individual',
             to: this.recipientNumber,
             type: 'text',
-            text: { 
-              preview_url: false,
-              body: message 
-            }
-          }),
-        }
-      );
+            text: { body: message }
+          })
+        });
 
-      if (!response.ok) {
-        const error = await response.json();
-        console.error('Error WhatsApp API:', error);
-        throw new Error(`WhatsApp API error: ${JSON.stringify(error)}`);
+        return await messageResponse.json();
       }
 
-      return await response.json();
+      return data;
     } catch (error) {
-      console.error('Error enviando notificación:', error);
+      console.error('WhatsApp API Error:', error);
       throw error;
     }
   }
@@ -108,9 +128,12 @@ Por favor, revisa el sistema lo antes posible.`;
     try {
       const testMessage = '🧪 Test message from AjoloApp';
       console.log('Sending test message...');
+
+      const url = `${this.baseUrl}/${this.apiVersion}/${this.phoneNumberId}/messages`;
+      console.log('Test message URL:', url);
       
       const response = await fetch(
-        `${this.baseUrl}/${this.apiVersion}/${this.phoneNumberId}/messages`,
+        `${url}`,
         {
           method: 'POST',
           headers: {
