@@ -161,4 +161,28 @@ Por favor, revisa el sistema lo antes posible.`;
       throw error;
     }
   }
+
+  async sendTestMessage(message: string) {
+    const url = `${this.baseUrl}/${this.apiVersion}/${this.phoneNumberId}/messages`;
+    
+    console.log('Sending test message to:', this.recipientNumber);
+    
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${this.token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        messaging_product: 'whatsapp',
+        to: this.recipientNumber,
+        type: 'text',
+        text: { body: message }
+      })
+    });
+  
+    const data = await response.json();
+    console.log('WhatsApp API response:', data);
+    return data;
+  }
 }
