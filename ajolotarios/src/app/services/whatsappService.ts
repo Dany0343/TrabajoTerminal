@@ -19,7 +19,7 @@ export class WhatsAppService {
   private token: string;
   private phoneNumberId: string;
   private recipientNumber: string;
-  private apiVersion = 'v17.0';
+  private apiVersion = 'v21.0';
   private baseUrl = 'https://graph.facebook.com';
 
   constructor() {
