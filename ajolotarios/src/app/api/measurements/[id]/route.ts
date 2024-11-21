@@ -3,6 +3,9 @@
 import { NextResponse } from 'next/server';
 import { AlertType, Priority as AlertPriority, AlertStatus } from '@prisma/client';
 
+import { WhatsAppService } from '@/app/services/whatsappService';
+
+
 import db from '@/lib/db';
 
 export async function GET(
@@ -130,7 +133,84 @@ export async function PUT(
     }, []);
 
     if (alertsToCreate.length > 0) {
-      await db.alert.createMany({ data: alertsToCreate });
+      const createdAlerts = await db.alert.createMany({ data: alertsToCreate });
+      
+      // Enviar notificación WhatsApp para cada alerta
+      const whatsappService = new WhatsAppService();
+      
+      // Obtener las alertas creadas con toda la información necesaria
+      const fullAlerts = await db.alert.findMany({
+        where: {
+          id: {
+            in: createdAlerts.count ? Array.from({ length: createdAlerts.count }, (_, i) => createdAlerts.count - i) : []
+          }
+        },
+        include: {
+          measurement: {
+            include: {
+              parameters: {
+                include: {
+                  parameter: true
+                }
+              }
+            }
+          }
+        }
+      });
+    
+      await Promise.all(
+        fullAlerts.map(async (alert) => {
+          const deviceInfo = await db.device.findUnique({
+            where: { id: alert.measurement.deviceId },
+            include: {
+              tank: {
+                include: {
+                  ajolotary: true
+                }
+              }
+            }
+          });
+    
+          // Encontrar el parámetro relacionado con la alerta
+          const measurementParameter = alert.measurement.parameters.find(p => 
+            p.parameter.name === rules.find(r => 
+              r.parameterId === p.parameterId
+            )?.parameter.name
+          );
+    
+          if (deviceInfo && measurementParameter?.parameter) {
+            await whatsappService.sendAlertNotification({
+              alert: {
+                id: alert.id,
+                measurementId: alert.measurementId,
+                alertType: alert.alertType,
+                description: alert.description,
+                priority: alert.priority,
+                status: alert.status,
+                createdAt: alert.createdAt,
+                resolvedAt: alert.resolvedAt,
+                resolvedBy: alert.resolvedBy,
+                notes: alert.notes
+              },
+              deviceInfo: {
+                device: {
+                  id: deviceInfo.id,
+                  name: deviceInfo.name,
+                  serialNumber: deviceInfo.serialNumber,
+                  status: deviceInfo.status,
+                  tankId: deviceInfo.tankId,
+                  tank: {
+                    ...deviceInfo.tank,
+                    ajolotary: deviceInfo.tank.ajolotary
+                  }
+                }
+              },
+              parameter: measurementParameter.parameter,
+              value: Number(measurementParameter.value)
+            });
+          }
+        })
+      );
     }
 
     const finalMeasurement = await db.measurement.findUnique({
