@@ -32,31 +32,41 @@ export class TelegramService {
     });
   }
 
+  private escapeMarkdown(text: string): string {
+    // Escape special characters for MarkdownV2
+    return text.replace(/[_*\[\]()~`>#+=|{}.!-]/g, '\\$&');
+  }
+
   private formatAlertMessage(alertInfo: AlertInfo): string {
     const { alert, deviceInfo, parameter, value } = alertInfo;
     
-    return `🚨 *ALERTA EN SISTEMA AjoloApp*
+    // Escape each part individually
+    const formattedMessage = `🚨 *ALERTA EN SISTEMA AjoloApp*
 
-*Tipo de Alerta:* ${alert.alertType}
-*Prioridad:* ${alert.priority}
-*Descripción:* ${alert.description}
+*Tipo de Alerta:* ${this.escapeMarkdown(alert.alertType)}
+*Prioridad:* ${this.escapeMarkdown(alert.priority)}
+*Descripción:* ${this.escapeMarkdown(alert.description)}
 
 📍 *Ubicación:*
-Ajolotario: ${deviceInfo.device.tank.ajolotary.name}
-Tanque: ${deviceInfo.device.tank.name}
-Dispositivo: ${deviceInfo.device.name}
+Ajolotario: ${this.escapeMarkdown(deviceInfo.device.tank.ajolotary.name)}
+Tanque: ${this.escapeMarkdown(deviceInfo.device.tank.name)}
+Dispositivo: ${this.escapeMarkdown(deviceInfo.device.name)}
 
 📊 *Medición:*
-Parámetro: ${parameter.name}
-Valor: ${value}
+Parámetro: ${this.escapeMarkdown(parameter.name)}
+Valor: ${this.escapeMarkdown(String(value))}
 
-⏰ Fecha: ${new Date(alert.createdAt).toLocaleString('es-MX')}
+⏰ Fecha: ${this.escapeMarkdown(new Date(alert.createdAt).toLocaleString('es-MX'))}
 
-Por favor, revisa el sistema lo antes posible.`;
+Por favor, revisa el sistema lo antes posible\\.`;
+
+    return formattedMessage;
   }
 
   async sendMessage(text: string, parseMode: 'HTML' | 'MarkdownV2' = 'MarkdownV2') {
     try {
+      const formattedText = parseMode === 'MarkdownV2' ? this.escapeMarkdown(text) : text;
+      
       const response = await fetch(`${this.baseUrl}/sendMessage`, {
         method: 'POST',
         headers: {
@@ -64,7 +74,7 @@ Por favor, revisa el sistema lo antes posible.`;
         },
         body: JSON.stringify({
           chat_id: this.chatId,
-          text,
+          text: formattedText,
           parse_mode: parseMode
         })
       });
@@ -78,16 +88,16 @@ Por favor, revisa el sistema lo antes posible.`;
     }
   }
 
-  async sendAlertNotification(alertInfo: AlertInfo) {
-    const message = this.formatAlertMessage(alertInfo);
-    return this.sendMessage(message);
+  async testConnection() {
+    return this.sendMessage('🧪 AjoloApp Bot Test Connection');
   }
 
   async sendTestMessage(message: string) {
     return this.sendMessage(message);
   }
 
-  async testConnection() {
-    return this.sendMessage('🧪 AjoloApp Bot Test Connection');
+  async sendAlertNotification(alertInfo: AlertInfo) {
+    const message = this.formatAlertMessage(alertInfo);
+    return this.sendMessage(message);
   }
 }
