@@ -4,38 +4,39 @@ import { TelegramService } from '@/app/services/telegramService';
 
 export async function GET() {
   try {
-    console.log('Environment check:', {
-      TELEGRAM_BOT_TOKEN: !!process.env.TELEGRAM_BOT_TOKEN,
-      TELEGRAM_CHAT_ID: !!process.env.TELEGRAM_CHAT_ID,
-    });
-
     const service = new TelegramService();
-    const result = await service.sendTestMessage("🧪 Telegram API Test " + new Date().toISOString());
+    // Add timestamp to prevent caching
+    const testMessage = `Test message at ${Date.now()}`;
     
+    console.log('Attempting to send message:', testMessage);
+    
+    const result = await service.sendTestMessage(testMessage);
+    
+    if (!result.ok) {
+      throw new Error(`Telegram API error: ${JSON.stringify(result)}`);
+    }
+
     return NextResponse.json({
       success: true,
       result,
-      env: {
-        hasToken: !!process.env.TELEGRAM_BOT_TOKEN,
-        hasChatId: !!process.env.TELEGRAM_CHAT_ID,
-        tokenLength: process.env.TELEGRAM_BOT_TOKEN?.length || 0
-      },
       timestamp: new Date().toISOString()
+    }, {
+      headers: {
+        'Cache-Control': 'no-store, max-age=0',
+        'Pragma': 'no-cache'
+      }
     });
   } catch (error) {
-    const err = error as Error;
-    console.error('Telegram API Error:', {
-      message: err.message,
-      stack: err.stack
-    });
-    
+    console.error('Error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return NextResponse.json({ 
       success: false, 
-      error: err.message,
-      env: {
-        hasToken: !!process.env.TELEGRAM_BOT_TOKEN,
-        hasChatId: !!process.env.TELEGRAM_CHAT_ID
+      error: errorMessage 
+    }, { 
+      status: 500,
+      headers: {
+        'Cache-Control': 'no-store'
       }
-    }, { status: 500 });
+    });
   }
 }
