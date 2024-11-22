@@ -4,7 +4,8 @@ import { NextResponse } from 'next/server';
 import { AlertType, Priority as AlertPriority, AlertStatus, Measurement, MeasurementParameter } from '@prisma/client';
 import db from '@/lib/db';
 
-import { WhatsAppService } from '@/app/services/whatsappService';
+// import { WhatsAppService } from '@/app/services/whatsappService';
+import { TelegramService } from '@/app/services/telegramService';
 
 type AzureMeasurement = {
   sensorSerialNumber: string;
@@ -144,7 +145,8 @@ export async function POST(request: Request) {
       const createdAlerts = await db.alert.createMany({ data: alertsToCreate });
       
       // Enviar notificación WhatsApp para cada alerta
-      const whatsappService = new WhatsAppService();
+      // const whatsappService = new WhatsAppService();
+      const telegramService = new TelegramService();
       
       // Obtener las alertas creadas con toda la información necesaria
       const fullAlerts = await db.alert.findMany({
@@ -187,7 +189,7 @@ export async function POST(request: Request) {
           );
     
           if (deviceInfo && measurementParameter?.parameter) {
-            await whatsappService.sendAlertNotification({
+            await telegramService.sendAlertNotification({
               alert: {
                 id: alert.id,
                 measurementId: alert.measurementId,

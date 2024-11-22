@@ -2,16 +2,12 @@
 import { Alert, Device, Tank, Ajolotary, Parameter } from '@prisma/client';
 
 
+const DEFAULT_RECIPIENT_ID = '783493822';
+
 type AlertInfo = {
-  alert: Alert;
-  deviceInfo: {
-    device: Device & {
-      tank: Tank & {
-        ajolotary: Ajolotary;
-      };
-    };
-  };
-  parameter: Parameter;
+  alert: any; // Add proper type
+  deviceInfo: any; // Add proper type
+  parameter: any; // Add proper type
   value: number;
 };
 
@@ -19,11 +15,13 @@ export class TelegramService {
   private token: string;
   private chatId: string;
   private baseUrl: string;
+  private defaultRecipientId: string;
 
   constructor() {
     this.token = process.env.TELEGRAM_BOT_TOKEN || '';
     this.chatId = process.env.TELEGRAM_CHAT_ID || '';
     this.baseUrl = `https://api.telegram.org/bot${this.token}`;
+    this.defaultRecipientId = DEFAULT_RECIPIENT_ID;
 
     console.log('Telegram Service Configuration:', {
       hasToken: !!this.token,
@@ -63,19 +61,21 @@ Por favor, revisa el sistema lo antes posible\\.`;
     return formattedMessage;
   }
 
-  async sendMessage(text: string, parseMode: 'HTML' | 'MarkdownV2' = 'MarkdownV2') {
+  async sendMessage(text: string, recipientId?: string | number) {
     try {
-      const formattedText = parseMode === 'MarkdownV2' ? this.escapeMarkdown(text) : text;
+      const chatId = recipientId || this.defaultRecipientId;
       
+      console.log('Sending message to:', chatId);
+
       const response = await fetch(`${this.baseUrl}/sendMessage`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          chat_id: this.chatId,
-          text: formattedText,
-          parse_mode: parseMode
+          chat_id: chatId,
+          text: text,
+          parse_mode: 'HTML' // Using HTML format as it's easier to handle than MarkdownV2
         })
       });
 
@@ -88,16 +88,16 @@ Por favor, revisa el sistema lo antes posible\\.`;
     }
   }
 
-  async testConnection() {
-    return this.sendMessage('🧪 AjoloApp Bot Test Connection');
+  setDefaultRecipient(recipientId: string | number) {
+    this.defaultRecipientId = String(recipientId);
   }
 
-  async sendTestMessage(message: string) {
-    return this.sendMessage(message);
-  }
-
-  async sendAlertNotification(alertInfo: AlertInfo) {
+  async sendAlertNotification(alertInfo: AlertInfo, recipientId?: string | number) {
     const message = this.formatAlertMessage(alertInfo);
-    return this.sendMessage(message);
+    return this.sendMessage(message, recipientId);
+  }
+
+  async sendTestMessage(message: string, recipientId?: string | number) {
+    return this.sendMessage(`🧪 Test: ${message}`, recipientId);
   }
 }
