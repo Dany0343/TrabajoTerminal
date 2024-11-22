@@ -22,11 +22,16 @@ export class TelegramService {
     this.chatId = process.env.TELEGRAM_CHAT_ID || '';
     this.baseUrl = `https://api.telegram.org/bot${this.token}`;
     this.defaultRecipientId = DEFAULT_RECIPIENT_ID;
-
+  
+    if (!this.token) {
+      console.error('TELEGRAM_BOT_TOKEN no está configurado');
+    }
+    
     console.log('Telegram Service Configuration:', {
       hasToken: !!this.token,
       hasChatId: !!this.chatId,
-      tokenLength: this.token.length
+      tokenLength: this.token.length,
+      defaultRecipientId: this.defaultRecipientId
     });
   }
 
@@ -66,7 +71,8 @@ Por favor, revisa el sistema lo antes posible\\.`;
       const chatId = recipientId || this.defaultRecipientId;
       
       console.log('Sending message to:', chatId);
-
+      console.log('Message content:', text); // Agregamos log para debug
+  
       const response = await fetch(`${this.baseUrl}/sendMessage`, {
         method: 'POST',
         headers: {
@@ -75,10 +81,16 @@ Por favor, revisa el sistema lo antes posible\\.`;
         body: JSON.stringify({
           chat_id: chatId,
           text: text,
-          parse_mode: 'HTML' // Using HTML format as it's easier to handle than MarkdownV2
+          parse_mode: 'MarkdownV2'
         })
       });
-
+  
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Telegram API Error Response:', errorData);
+        throw new Error(`Telegram API error: ${JSON.stringify(errorData)}`);
+      }
+  
       const data = await response.json();
       console.log('Telegram API response:', data);
       return data;
