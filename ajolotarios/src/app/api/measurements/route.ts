@@ -172,6 +172,8 @@ export async function POST(request: Request) {
 
     if (alertsToCreate.length > 0) {
       const createdAlerts = await db.alert.createMany({ data: alertsToCreate });
+      console.log('TELEGRAM_BOT_TOKEN:', process.env.TELEGRAM_BOT_TOKEN);
+      console.log('TELEGRAM_CHAT_ID:', process.env.TELEGRAM_CHAT_ID);
       
       // Enviar notificación WhatsApp para cada alerta
       // const whatsappService = new WhatsAppService();
