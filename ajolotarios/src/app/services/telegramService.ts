@@ -18,10 +18,8 @@ export class TelegramService {
   private defaultRecipientId: string;
 
   constructor() {
-    // this.token = process.env.TELEGRAM_BOT_TOKEN || '';
-    this.token = "7799038725:AAE8KmzKRjIXALL4T8xzuVykMcr_aU8Cmu8";
-    // this.chatId = process.env.TELEGRAM_CHAT_ID || '';
-    this.chatId = '783493822';
+    this.token = process.env.TELEGRAM_BOT_TOKEN || '';
+    this.chatId = process.env.TELEGRAM_CHAT_ID || '';
     this.baseUrl = `https://api.telegram.org/bot${this.token}`;
     this.defaultRecipientId = DEFAULT_RECIPIENT_ID;
   
@@ -119,7 +117,7 @@ Por favor, revisa el sistema lo antes posible\\.`;
   }
 
   async sendTestMessage(message: string, recipientId?: string | number) {
-    const escapedMessage = this.escapeMarkdown(message);
-    return this.sendMessage(`🧪 Test: ${escapedMessage}`, recipientId);
-  }
+  const escapedMessage = this.escapeMarkdown(message);
+  return this.sendMessage(`🧪 Test: ${escapedMessage}`, recipientId);
+}
 }
