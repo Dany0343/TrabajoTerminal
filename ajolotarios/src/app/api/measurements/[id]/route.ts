@@ -1,4 +1,5 @@
 // app/api/measurements/[id]/route.ts
+export const dynamic = 'force-dynamic';
 
 import { NextResponse } from 'next/server';
 import { AlertType, Priority as AlertPriority, AlertStatus } from '@prisma/client';
