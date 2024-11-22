@@ -3,10 +3,7 @@ export const dynamic = 'force-dynamic';
 
 import { NextResponse } from 'next/server';
 import { AlertType, Priority as AlertPriority, AlertStatus } from '@prisma/client';
-
-// import { WhatsAppService } from '@/app/services/whatsappService';
 import { TelegramService } from '@/app/services/telegramService';
-
 
 import db from '@/lib/db';
 
@@ -86,10 +83,11 @@ export async function PUT(
         },
       },
       include: {
-        device: true,
-        sensor: { include: { type: true } },
-        parameters: { include: { parameter: true } },
-        alerts: true,
+        parameters: {
+          include: {
+            parameter: true,
+          },
+        },
       },
     });
 
@@ -106,9 +104,9 @@ export async function PUT(
       if (!rule) return alerts;
 
       const paramValue = Number(param.value);
-      const minValue = rule.optimalMin ? Number(rule.optimalMin) : null;
-      const maxValue = rule.optimalMax ? Number(rule.optimalMax) : null;
-      
+      const minValue = rule.optimalMin !== null ? Number(rule.optimalMin) : null;
+      const maxValue = rule.optimalMax !== null ? Number(rule.optimalMax) : null;
+
       let outOfRange = false;
       let description = '';
 
@@ -135,87 +133,85 @@ export async function PUT(
     }, []);
 
     if (alertsToCreate.length > 0) {
-      const createdAlerts = await db.alert.createMany({ data: alertsToCreate });
-      console.log('TELEGRAM_BOT_TOKEN:', process.env.TELEGRAM_BOT_TOKEN);
-      console.log('TELEGRAM_CHAT_ID:', process.env.TELEGRAM_CHAT_ID);
-      
-      // Enviar notificación WhatsApp para cada alerta
-      // const whatsappService = new WhatsAppService();
-      const telegramService = new TelegramService();
-      
-      // Obtener las alertas creadas con toda la información necesaria
-      const fullAlerts = await db.alert.findMany({
-        where: {
-          id: {
-            in: createdAlerts.count ? Array.from({ length: createdAlerts.count }, (_, i) => createdAlerts.count - i) : []
-          }
-        },
-        include: {
-          measurement: {
+      // Crear alertas individualmente e incluir la medición y sus parámetros
+      const createdAlerts = await Promise.all(
+        alertsToCreate.map(alertData =>
+          db.alert.create({
+            data: alertData,
             include: {
-              parameters: {
+              measurement: {
                 include: {
-                  parameter: true
-                }
-              }
-            }
-          }
-        }
-      });
-    
-      await Promise.all(
-        fullAlerts.map(async (alert) => {
-          const deviceInfo = await db.device.findUnique({
-            where: { id: alert.measurement.deviceId },
-            include: {
-              tank: {
-                include: {
-                  ajolotary: true
-                }
-              }
-            }
-          });
-    
-          // Encontrar el parámetro relacionado con la alerta
-          const measurementParameter = alert.measurement.parameters.find(p => 
-            p.parameter.name === rules.find(r => 
-              r.parameterId === p.parameterId
-            )?.parameter.name
-          );
-    
-          if (deviceInfo && measurementParameter?.parameter) {
-            await telegramService.sendAlertNotification({
-              alert: {
-                id: alert.id,
-                measurementId: alert.measurementId,
-                alertType: alert.alertType,
-                description: alert.description,
-                priority: alert.priority,
-                status: alert.status,
-                createdAt: alert.createdAt,
-                resolvedAt: alert.resolvedAt,
-                resolvedBy: alert.resolvedBy,
-                notes: alert.notes
+                  parameters: {
+                    include: {
+                      parameter: true,
+                    },
+                  },
+                },
               },
-              deviceInfo: {
-                device: {
-                  id: deviceInfo.id,
-                  name: deviceInfo.name,
-                  serialNumber: deviceInfo.serialNumber,
-                  status: deviceInfo.status,
-                  tankId: deviceInfo.tankId,
-                  tank: {
-                    ...deviceInfo.tank,
-                    ajolotary: deviceInfo.tank.ajolotary
-                  }
-                }
-              },
-              parameter: measurementParameter.parameter,
-              value: Number(measurementParameter.value)
-            });
-          }
-        })
+            },
+          })
+        )
       );
+
+      const telegramService = new TelegramService();
+
+      // Procesar cada alerta creada
+      for (const alert of createdAlerts) {
+        const deviceInfo = await db.device.findUnique({
+          where: { id: alert.measurementId },
+          include: {
+            tank: {
+              include: {
+                ajolotary: true,
+              },
+            },
+          },
+        });
+
+        if (!deviceInfo) {
+          console.error(`Dispositivo con ID ${alert.measurementId} no encontrado.`);
+          continue;
+        }
+
+        // Encontrar el parámetro relacionado con la alerta
+        const measurementParameter = alert.measurement.parameters.find(p =>
+          rules.some(r => r.parameterId === p.parameterId)
+        );
+
+        if (measurementParameter?.parameter) {
+          await telegramService.sendAlertNotification({
+            alert: {
+              id: alert.id,
+              measurementId: alert.measurementId,
+              alertType: alert.alertType,
+              description: alert.description,
+              priority: alert.priority,
+              status: alert.status,
+              createdAt: alert.createdAt,
+              resolvedAt: alert.resolvedAt,
+              resolvedBy: alert.resolvedBy,
+              notes: alert.notes,
+            },
+            deviceInfo: {
+              device: {
+                id: deviceInfo.id,
+                name: deviceInfo.name,
+                serialNumber: deviceInfo.serialNumber,
+                status: deviceInfo.status,
+                tankId: deviceInfo.tankId,
+                tank: {
+                  ...deviceInfo.tank,
+                  ajolotary: deviceInfo.tank.ajolotary,
+                },
+              },
+            },
+            parameter: measurementParameter.parameter,
+            value: Number(measurementParameter.value),
+          });
+        } else {
+          console.error(`No se encontró el parámetro para la alerta con ID ${alert.id}.`);
+        }
+      }
     }
 
     const finalMeasurement = await db.measurement.findUnique({

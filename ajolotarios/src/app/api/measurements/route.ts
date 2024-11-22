@@ -172,7 +172,10 @@ export async function POST(request: Request) {
     }, []);
 
     if (alertsToCreate.length > 0) {
-      const createdAlerts = await db.alert.createMany({ data: alertsToCreate });
+      const createdAlerts = await Promise.all(
+        alertsToCreate.map(alertData => db.alert.create({ data: alertData }))
+      );
+
       console.log('TELEGRAM_BOT_TOKEN:', process.env.TELEGRAM_BOT_TOKEN);
       console.log('TELEGRAM_CHAT_ID:', process.env.TELEGRAM_CHAT_ID);
       
@@ -181,24 +184,24 @@ export async function POST(request: Request) {
       const telegramService = new TelegramService();
       
       // Obtener las alertas creadas con toda la información necesaria
-      const fullAlerts = await db.alert.findMany({
-        where: {
-          id: {
-            in: createdAlerts.count ? Array.from({ length: createdAlerts.count }, (_, i) => createdAlerts.count - i) : []
-          }
-        },
-        include: {
-          measurement: {
+      const fullAlerts = await Promise.all(
+        createdAlerts.map(async (alert) => {
+          return await db.alert.findUniqueOrThrow({
+            where: { id: alert.id },
             include: {
-              parameters: {
+              measurement: {
                 include: {
-                  parameter: true
+                  parameters: {
+                    include: {
+                      parameter: true
+                    }
+                  }
                 }
               }
             }
-          }
-        }
-      });
+          });
+        })
+      );
     
       await Promise.all(
         fullAlerts.map(async (alert) => {
