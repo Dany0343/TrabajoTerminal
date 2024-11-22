@@ -1,5 +1,7 @@
 // app/api/measurements/azure/route.ts
 
+export const dynamic = 'force-dynamic';
+
 import { NextResponse } from 'next/server';
 import { AlertType, Priority as AlertPriority, AlertStatus, Measurement, MeasurementParameter } from '@prisma/client';
 import db from '@/lib/db';
