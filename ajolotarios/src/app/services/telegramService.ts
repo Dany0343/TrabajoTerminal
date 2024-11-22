@@ -36,8 +36,15 @@ export class TelegramService {
   }
 
   private escapeMarkdown(text: string): string {
-    // Escape special characters for MarkdownV2
-    return text.replace(/[_*\[\]()~`>#+=|{}.!-]/g, '\\$&');
+    // Escape special characters for MarkdownV2 more thoroughly
+    const specialChars = ['_', '*', '[', ']', '(', ')', '~', '`', '>', '#', '+', '-', '=', '|', '{', '}', '.', '!'];
+    let escapedText = text.toString(); // Convert to string in case of numbers
+    
+    specialChars.forEach(char => {
+      escapedText = escapedText.replace(new RegExp('\\' + char, 'g'), '\\' + char);
+    });
+    
+    return escapedText;
   }
 
   private formatAlertMessage(alertInfo: AlertInfo): string {
@@ -110,6 +117,7 @@ Por favor, revisa el sistema lo antes posible\\.`;
   }
 
   async sendTestMessage(message: string, recipientId?: string | number) {
-    return this.sendMessage(`🧪 Test: ${message}`, recipientId);
+    const escapedMessage = this.escapeMarkdown(message);
+    return this.sendMessage(`🧪 Test: ${escapedMessage}`, recipientId);
   }
 }
