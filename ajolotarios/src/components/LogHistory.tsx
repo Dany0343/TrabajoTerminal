@@ -86,18 +86,23 @@ const LogHistory: React.FC = () => {
         if (filters.endDate) query.append('endDate', filters.endDate);
 
         const res = await fetch(`/api/logs?${query.toString()}`);
-        const data = await res.json(); // Get response data first
+        const data = await res.json();
     
         if (!res.ok) {
-          // Check response status and throw with error message from API
-          throw new Error(data.error || 'Error al obtener los logs');
-        }
+            if (res.status === 404) {
+              throw new Error('API endpoint not found');
+            }
+            const errorData = await res.json().catch(() => ({}));
+            throw new Error(errorData.error || 'Error de servidor');
+          }
     
         setLogs(data.data);
         setTotalPages(data.totalPages);
+        setLogs(data.data || []);
+        setTotalPages(data.totalPages || 1);
       } catch (err: any) {
         console.error('Error fetching logs:', err);
-        setError(err.message || 'Error desconocido');
+        setError(err.message);
       } finally {
         setLoading(false);
       }
