@@ -4,7 +4,12 @@
 
 import { useEffect, useState } from 'react';
 import { Log as PrismaLog, ActionType } from '@prisma/client';
-import { User } from '@/types';
+import { User } from '@/types/types';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { useSession } from 'next-auth/react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface Log extends PrismaLog {
   user?: {
@@ -12,11 +17,6 @@ interface Log extends PrismaLog {
     lastName: string;
   } | null;
 }
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
-import { useSession } from 'next-auth/react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface LogsResponse {
   data: Log[];
@@ -26,7 +26,7 @@ interface LogsResponse {
 }
 
 const LogHistory: React.FC = () => {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const [logs, setLogs] = useState<Log[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [filters, setFilters] = useState({
@@ -43,7 +43,7 @@ const LogHistory: React.FC = () => {
 
   // Fetch users for the user filter
   useEffect(() => {
-    if (!session || (session.user as any).role !== 'SUPER_ADMIN') return;
+    if (status !== "authenticated" || session.user.role !== 'SUPER_ADMIN') return;
 
     const fetchUsers = async () => {
       try {
@@ -59,11 +59,11 @@ const LogHistory: React.FC = () => {
     };
 
     fetchUsers();
-  }, [session]);
+  }, [session, status]);
 
   // Fetch logs whenever filters or page changes
   useEffect(() => {
-    if (!session || (session.user as any).role !== 'SUPER_ADMIN') return;
+    if (status !== "authenticated" || session.user.role !== 'SUPER_ADMIN') return;
 
     const fetchLogs = async () => {
       setLoading(true);
@@ -95,7 +95,7 @@ const LogHistory: React.FC = () => {
     };
 
     fetchLogs();
-  }, [filters, page, session]);
+  }, [filters, page, session, status]);
 
   // Reset to first page when filters change
   useEffect(() => {
@@ -109,10 +109,14 @@ const LogHistory: React.FC = () => {
     setFilters(prev => ({ ...prev, [name]: value }));
   };
 
-// First, add a declaration for the session type
-if (!session || (session.user as any).role !== 'SUPER_ADMIN') {
+  // Manejar diferentes estados de sesión
+  if (status === "loading") {
+    return <div className="text-center">Cargando sesión...</div>;
+  }
+
+  if (!session || session.user.role !== 'SUPER_ADMIN') {
     return <div className="text-center text-red-500">No tienes permisos para ver esta sección.</div>;
-}
+  }
 
   return (
     <Card>

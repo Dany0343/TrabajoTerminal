@@ -1,6 +1,6 @@
 // src/components/MeasurementHistory.tsx
 import React from 'react'
-import { Measurement } from '@/types'
+import { Measurement } from '@/types/types'
 
 interface MeasurementHistoryProps {
   measurements: Measurement[]

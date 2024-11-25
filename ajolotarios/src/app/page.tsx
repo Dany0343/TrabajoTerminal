@@ -15,7 +15,7 @@ import LogHistory from '@/components/LogHistory' // Importa el componente de log
 import jsPDF from 'jspdf'
 import html2canvas from 'html2canvas'
 
-import { Ajolotary, Tank, Axolotl, Alert, Measurement } from '@/types'
+import { Ajolotary, Tank, Axolotl, Alert, Measurement } from '@/types/types'
 
 const Map = dynamic(() => import('@/components/Map'), { ssr: false, loading: () => <LoadingSpinner /> })
 

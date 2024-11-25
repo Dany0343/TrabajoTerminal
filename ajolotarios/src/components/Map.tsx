@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react'
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
 import L from 'leaflet'
-import { Ajolotary } from '@/types'
+import { Ajolotary } from '@/types/types'
 
 // Solución para los iconos de Leaflet en Next.js
 delete (L.Icon.Default.prototype as any)._getIconUrl

@@ -1,7 +1,7 @@
 // src/components/AjolotarySelector.tsx
 import React from 'react'
 import Select from 'react-select'
-import { Ajolotary } from '@/types'
+import { Ajolotary } from '@/types/types'
 
 interface Option {
   value: number
