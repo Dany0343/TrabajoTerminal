@@ -32,8 +32,8 @@ const LogHistory: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [filters, setFilters] = useState({
     userId: '',
-    action: '',
-    entity: '',
+    action: '',  
+    entity: '',  
     startDate: '',
     endDate: '',
   });
@@ -143,11 +143,10 @@ const LogHistory: React.FC = () => {
               <SelectValue placeholder="Acción" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Todas</SelectItem>
-              <SelectItem value={ActionType.CREATE}>Crear</SelectItem>
-              <SelectItem value={ActionType.READ}>Leer</SelectItem>
-              <SelectItem value={ActionType.UPDATE}>Actualizar</SelectItem>
-              <SelectItem value={ActionType.DELETE}>Eliminar</SelectItem>
+                <SelectItem value="CREATE">Crear</SelectItem>
+                <SelectItem value="READ">Leer</SelectItem>
+                <SelectItem value="UPDATE">Actualizar</SelectItem>
+                <SelectItem value="DELETE">Eliminar</SelectItem>
             </SelectContent>
           </Select>
 
@@ -160,11 +159,10 @@ const LogHistory: React.FC = () => {
               <SelectValue placeholder="Entidad" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Todas</SelectItem>
-              <SelectItem value="Ajolotary">Ajolotario</SelectItem>
-              <SelectItem value="Tank">Tanque</SelectItem>
-              <SelectItem value="Sensor">Sensor</SelectItem>
-              <SelectItem value="Measurement">Medición</SelectItem>
+                <SelectItem value="AJOLOTARY">Ajolotario</SelectItem>
+                <SelectItem value="TANK">Tanque</SelectItem>
+                <SelectItem value="SENSOR">Sensor</SelectItem>
+                <SelectItem value="MEASUREMENT">Medición</SelectItem>
               {/* Agrega más entidades según tu esquema */}
             </SelectContent>
           </Select>
