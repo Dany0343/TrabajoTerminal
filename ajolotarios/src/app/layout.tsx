@@ -1,9 +1,10 @@
-// app/layout.tsx
+// src/app/layout.tsx
 import Navbar from "@/components/Navbar";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import Head from "next/head";
+import Providers from "./providers"; // Importa el componente Providers
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -29,11 +30,16 @@ export default function RootLayout({
         <link rel="manifest" href="/manifest.json" />
         <link rel="icon" href="/ajolotes.png" />
         <meta name="theme-color" content="#000000" />
-        <meta name="description" content="Aplicación de monitoreo de parametros fisicoquimicos para ajolotes" />
+        <meta
+          name="description"
+          content="Aplicación de monitoreo de parametros fisicoquimicos para ajolotes"
+        />
       </Head>
       <body className={inter.className}>
-        <Navbar />
-        {children}
+        <Providers> {/* Envuelve con Providers */}
+          <Navbar />
+          {children}
+        </Providers>
       </body>
     </html>
   );

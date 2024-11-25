@@ -1,3 +1,5 @@
+// lib/auth.js
+
 import CredentialsProvider from "next-auth/providers/credentials";
 import db from "@/lib/db";
 import bcrypt from "bcrypt";
