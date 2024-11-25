@@ -1,10 +1,11 @@
 // src/app/layout.tsx
+
 import Navbar from "@/components/Navbar";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import Head from "next/head";
-import Providers from "./providers"; // Importa el componente Providers
+import Providers from "./providers"; // Asegúrate de que la ruta sea correcta
 
 const inter = Inter({ subsets: ["latin"] });
 

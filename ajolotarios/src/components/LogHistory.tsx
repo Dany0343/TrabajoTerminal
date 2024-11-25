@@ -4,7 +4,7 @@
 
 import { useEffect, useState } from 'react';
 import { Log as PrismaLog, ActionType } from '@prisma/client';
-import { User } from '@/types/types';
+import { User, Role } from '@/types/types';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
@@ -43,7 +43,7 @@ const LogHistory: React.FC = () => {
 
   // Fetch users for the user filter
   useEffect(() => {
-    if (status !== "authenticated" || session.user.role !== 'SUPER_ADMIN') return;
+    if (status !== "authenticated" || session.user.role !== Role.SUPER_ADMIN) return;
 
     const fetchUsers = async () => {
       try {
@@ -63,7 +63,7 @@ const LogHistory: React.FC = () => {
 
   // Fetch logs whenever filters or page changes
   useEffect(() => {
-    if (status !== "authenticated" || session.user.role !== 'SUPER_ADMIN') return;
+    if (status !== "authenticated" || session.user.role !== Role.SUPER_ADMIN) return;
 
     const fetchLogs = async () => {
       setLoading(true);
@@ -114,7 +114,7 @@ const LogHistory: React.FC = () => {
     return <div className="text-center">Cargando sesión...</div>;
   }
 
-  if (!session || session.user.role !== 'SUPER_ADMIN') {
+  if (!session || session.user.role !== Role.SUPER_ADMIN) {
     return <div className="text-center text-red-500">No tienes permisos para ver esta sección.</div>;
   }
 
