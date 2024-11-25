@@ -3,7 +3,17 @@
 import { NextResponse } from 'next/server';
 import db from '@/lib/db'
 
+// logging 
+import { createLog } from '@/lib/logger';
+import { ActionType } from '@prisma/client';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '@/lib/auth';
+
 export async function GET() {
+
+  const session = await getServerSession(authOptions);
+  const userId = session?.user?.id;
+
   try {
     const sensors = await db.sensor.findMany({
       include: {
@@ -12,6 +22,16 @@ export async function GET() {
         measurements: true,
       },
     });
+
+    // Registrar el log de lectura masiva
+    await createLog(
+      ActionType.READ,
+      'Sensor',
+      undefined,
+      userId,
+      `Lectura masiva de sensores`
+    );
+
     return NextResponse.json(sensors);
   } catch (error) {
     console.error(error);
@@ -20,6 +40,10 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+
+  const session = await getServerSession(authOptions);
+  const userId = session?.user?.id;
+
   try {
     const data = await request.json();
     const {
@@ -44,6 +68,15 @@ export async function POST(request: Request) {
         status,
       },
     });
+
+    // Registrar el log de creación
+    await createLog(
+      ActionType.CREATE,
+      'Sensor',
+      sensor.id,
+      userId,
+      JSON.stringify({ model, serialNumber, typeId, status, deviceId })
+    );
 
     return NextResponse.json(sensor, { status: 201 });
   } catch (error) {

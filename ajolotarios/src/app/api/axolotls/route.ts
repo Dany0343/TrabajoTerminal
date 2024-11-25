@@ -3,7 +3,17 @@
 import { NextResponse } from 'next/server';
 import db from '@/lib/db';
 
+// logging 
+import { createLog } from '@/lib/logger';
+import { ActionType } from '@prisma/client';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '@/lib/auth';
+
 export async function GET(request: Request) {
+
+  const session = await getServerSession(authOptions);
+  const userId = session?.user?.id;
+
   try {
     const { searchParams } = new URL(request.url);
     const ajolotaryIdParam = searchParams.get('ajolotaryId');
@@ -29,6 +39,16 @@ export async function GET(request: Request) {
         },
       },
     });
+
+    // Registrar el log de lectura masiva
+    await createLog(
+      ActionType.READ,
+      'Axolotl',
+      undefined,
+      userId,
+      `Lectura masiva de ajolotes con filtros: ajolotaryId=${ajolotaryIdParam}`
+    );
+
     return NextResponse.json(axolotls);
   } catch (error) {
     console.error(error);
@@ -37,6 +57,10 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+
+  const session = await getServerSession(authOptions);
+  const userId = session?.user?.id;
+
   try {
     const data = await request.json();
     const { name, species, age, health, size, weight, stage, tankId, observations } = data;
@@ -66,6 +90,15 @@ export async function POST(request: Request) {
         },
       },
     });
+
+    // Registrar el log de creación
+    await createLog(
+      ActionType.CREATE,
+      'Axolotl',
+      axolotl.id,
+      userId,
+      JSON.stringify(data)
+    );
 
     return NextResponse.json(axolotl, { status: 201 });
   } catch (error) {

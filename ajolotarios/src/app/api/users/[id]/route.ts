@@ -3,14 +3,25 @@
 import { NextResponse } from 'next/server';
 import db from '@/lib/db';
 
+// logging 
+import { createLog } from '@/lib/logger';
+import { ActionType } from '@prisma/client';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '@/lib/auth';
+
 export async function GET(
   request: Request,
   { params }: { params: { id: string } }
 ) {
+
+  const session = await getServerSession(authOptions);
+  const userId = session?.user?.id;
+
   try {
     const user = await db.user.findUnique({
       where: { id: Number(params.id) },
       select: {
+        id: true,
         firstName: true,
         lastName: true,
         email: true,
@@ -19,6 +30,16 @@ export async function GET(
     });
 
     if (user) {
+
+      // Registrar el log de lectura
+      await createLog(
+        ActionType.READ,
+        'User',
+        user.id,
+        userId,
+        `Lectura de los datos del usuario con ID ${user.id}`
+      );
+
       return NextResponse.json(user);
     } else {
       return new NextResponse('Usuario no encontrado', { status: 404 });

@@ -3,7 +3,16 @@
 import { NextResponse } from 'next/server';
 import db from '@/lib/db';
 
+// Logging
+import { createLog } from '@/lib/logger';
+import { ActionType } from '@prisma/client';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '@/lib/auth';
+
 export async function GET(request: Request) {
+  const session = await getServerSession(authOptions);
+  const userId = session?.user?.id;
+
   try {
     const { searchParams } = new URL(request.url);
     const alertType = searchParams.get('alertType');
@@ -62,6 +71,17 @@ export async function GET(request: Request) {
       db.alert.count({ where }),
     ]);
 
+    // Registrar el log de lectura
+    for (const alert of alerts) {
+      await createLog(
+        ActionType.READ,
+        'Alert',
+        alert.id,
+        userId,
+        `Lectura de la alerta con ID ${alert.id}`
+      );
+    }
+
     return NextResponse.json({
       data: alerts,
       total,
@@ -75,6 +95,9 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  const session = await getServerSession(authOptions);
+  const userId = session?.user?.id;
+  
   try {
     const data = await request.json();
     const {
@@ -142,6 +165,15 @@ export async function POST(request: Request) {
         resolver: true,
       },
     });
+
+    // Registrar el log de creación
+    await createLog(
+      ActionType.CREATE,
+      'Alert',
+      alert.id,
+      userId,
+      JSON.stringify(data)
+    );
 
     return NextResponse.json(alert, { status: 201 });
   } catch (error) {

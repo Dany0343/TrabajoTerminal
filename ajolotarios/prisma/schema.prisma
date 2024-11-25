@@ -25,6 +25,7 @@ model User {
   // creator       User?       @relation("UserCreator", fields: [createdBy], references: [id])
   // createdUsers  User[]      @relation("UserCreator")
   Alert       Alert[]
+  Log         Log[]
 }
 
 enum Role {
@@ -226,3 +227,23 @@ model MeasurementRule {
   active       Boolean   @default(true)
 }
 
+
+model Log {
+  id           Int       @id @default(autoincrement())
+  userId       Int?      // Opcional, ya que algunas operaciones pueden no tener un usuario asociado
+  user         User?     @relation(fields: [userId], references: [id])
+  action       ActionType
+  entity       String    // Nombre de la entidad afectada, e.g., "Measurement", "Tank"
+  entityId     Int?      // ID de la entidad afectada, si aplica
+  timestamp    DateTime  @default(now())
+  details      String?   // Detalles adicionales sobre la acción
+
+  @@index([userId])
+}
+
+enum ActionType {
+  CREATE
+  READ
+  UPDATE
+  DELETE
+}

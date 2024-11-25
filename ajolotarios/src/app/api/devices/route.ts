@@ -3,13 +3,32 @@
 import { NextRequest, NextResponse } from 'next/server';
 import db from '@/lib/db';
 
+// logging 
+import { createLog } from '@/lib/logger';
+import { ActionType } from '@prisma/client';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '@/lib/auth';
+
 export async function GET() {
+  const session = await getServerSession(authOptions);
+  const userId = session?.user?.id;
+
   try {
     const devices = await db.device.findMany({
       include: {
         tank: true, // Incluir información del tanque asociado
       },
     });
+
+    // Registrar el log de lectura masiva
+    await createLog(
+      ActionType.READ,
+      'Device',
+      undefined,
+      userId,
+      `Lectura masiva de dispositivos`
+    );
+
     return NextResponse.json(devices);
   } catch (error) {
     console.error(error);
@@ -20,6 +39,8 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const { name, serialNumber, tankId } = await request.json();
+    const session = await getServerSession(authOptions);
+    const userId = session?.user?.id;
 
     // Validaciones básicas
     if (!name) {
@@ -51,6 +72,15 @@ export async function POST(request: NextRequest) {
         tank: true, // Incluir información del tanque en la respuesta
       },
     });
+
+    // Registrar el log de creación
+    await createLog(
+      ActionType.CREATE,
+      'Device',
+      newDevice.id,
+      userId,
+      JSON.stringify({ name, serialNumber, tankId })
+    );
 
     return NextResponse.json(newDevice, { status: 201 });
   } catch (error: any) {

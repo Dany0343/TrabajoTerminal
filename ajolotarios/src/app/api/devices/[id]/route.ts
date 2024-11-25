@@ -3,8 +3,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import db from '@/lib/db';
 
+// logging 
+import { createLog } from '@/lib/logger';
+import { ActionType } from '@prisma/client';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '@/lib/auth';
+
 export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
   const { id } = params;
+  const session = await getServerSession(authOptions);
+  const userId = session?.user?.id;
 
   try {
     const { name, serialNumber, tankId } = await request.json();
@@ -41,6 +49,15 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
       },
     });
 
+    // Registrar el log de actualización
+    await createLog(
+      ActionType.UPDATE,
+      'Device',
+      updatedDevice.id,
+      userId,
+      JSON.stringify({ name, serialNumber, tankId })
+    );
+
     return NextResponse.json(updatedDevice, { status: 200 });
   } catch (error: any) {
     console.error(error);
@@ -53,11 +70,21 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 
 export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
   const { id } = params;
+  const session = await getServerSession(authOptions);
+  const userId = session?.user?.id;
 
   try {
     await db.device.delete({
       where: { id: Number(id) },
     });
+    // Registrar el log de eliminación
+     await createLog(
+      ActionType.DELETE,
+      'Device',
+      Number(id),
+      userId,
+      `Eliminación del dispositivo con serialNumber ${id}`
+    );
 
     return NextResponse.json({ message: 'Dispositivo eliminado exitosamente' }, { status: 200 });
   } catch (error) {

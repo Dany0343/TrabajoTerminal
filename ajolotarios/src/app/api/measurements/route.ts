@@ -8,8 +8,18 @@ import db from '@/lib/db';
 // import { WhatsAppService } from '@/app/services/whatsappService';
 import { TelegramService } from '@/app/services/telegramService';
 
+// logging 
+import { createLog } from '@/lib/logger';
+import { ActionType } from '@prisma/client';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '@/lib/auth';
+
 
 export async function GET(request: Request) {
+
+  const session = await getServerSession(authOptions);
+  const userId = session?.user?.id;
+
   try {
     const { searchParams } = new URL(request.url);
     const deviceId = searchParams.get('deviceId');
@@ -75,6 +85,15 @@ export async function GET(request: Request) {
       db.measurement.count({ where }),
     ]);
 
+    // Registrar el log de lectura masiva
+    await createLog(
+      ActionType.READ,
+      'Measurement',
+      undefined,
+      userId,
+      `Lectura masiva de mediciones con filtros: deviceId=${deviceId}, sensorId=${sensorId}, isValid=${isValid}, startDate=${startDate}, endDate=${endDate}`
+    );
+
     return NextResponse.json({
       data: measurements,
       total,
@@ -89,6 +108,10 @@ export async function GET(request: Request) {
 
 
 export async function POST(request: Request) {
+
+  const session = await getServerSession(authOptions);
+  const userId = session?.user?.id;
+
   try {
     const data = await request.json();
     const { deviceId, sensorId, dateTime, isValid, parameters } = data;
@@ -267,6 +290,15 @@ export async function POST(request: Request) {
         alerts: true,
       },
     });
+
+    // Registrar el log de creación de medición
+    await createLog(
+      ActionType.CREATE,
+      'Measurement',
+      updatedMeasurement?.id,
+      userId,
+      `Creación de la medición con ID ${updatedMeasurement?.id}`
+    );
 
     return NextResponse.json(updatedMeasurement, { status: 201 });
   } catch (error) {

@@ -5,12 +5,22 @@ import { NextResponse } from 'next/server';
 import { AlertType, Priority as AlertPriority, AlertStatus } from '@prisma/client';
 import { TelegramService } from '@/app/services/telegramService';
 
+// logging 
+import { createLog } from '@/lib/logger';
+import { ActionType } from '@prisma/client';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '@/lib/auth';
+
 import db from '@/lib/db';
 
 export async function GET(
   request: Request,
   { params }: { params: { id: string } }
 ) {
+
+  const session = await getServerSession(authOptions);
+  const userId = session?.user?.id;
+
   try {
     const measurement = await db.measurement.findUnique({
       where: { id: Number(params.id) },
@@ -36,6 +46,16 @@ export async function GET(
     if (!measurement) {
       return new NextResponse('Medición no encontrada', { status: 404 });
     }
+
+    // Registrar el log de lectura
+    await createLog(
+      ActionType.READ,
+      'Measurement',
+      measurement.id,
+      userId,
+      `Lectura de la medición con ID ${measurement.id}`
+    );
+
     return NextResponse.json(measurement);
   } catch (error) {
     console.error(error);
@@ -47,6 +67,9 @@ export async function PUT(
   request: Request,
   { params }: { params: { id: string } }
 ) {
+  const session = await getServerSession(authOptions);
+  const userId = session?.user?.id;
+
   try {
     const data = await request.json();
     const { deviceId, sensorId, dateTime, isValid, parameters } = data;
@@ -224,6 +247,15 @@ export async function PUT(
       },
     });
 
+    // Registrar el log de actualización de la medición
+    await createLog(
+      ActionType.UPDATE,
+      'Measurement',
+      finalMeasurement?.id,
+      userId,
+      `Actualización de la medición con ID ${finalMeasurement?.id}`
+    );
+
     return NextResponse.json(finalMeasurement);
   } catch (error) {
     console.error('Error detallado:', error);
@@ -238,10 +270,24 @@ export async function DELETE(
   request: Request,
   { params }: { params: { id: string } }
 ) {
+
+  const session = await getServerSession(authOptions);
+  const userId = session?.user?.id;
+
   try {
     await db.measurement.delete({
       where: { id: Number(params.id) },
     });
+
+    // Registrar el log de eliminación
+    await createLog(
+      ActionType.DELETE,
+      'Measurement',
+      Number(params.id),
+      userId,
+      `Eliminación de la medición con ID ${params.id}`
+    );
+
     return new NextResponse(null, { status: 204 });
   } catch (error) {
     console.error(error);

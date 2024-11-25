@@ -11,6 +11,7 @@ import dynamic from 'next/dynamic'
 import LoadingSpinner from '@/components/LoadingSpinner' 
 import AjolotarySelector from '@/components/AjolotarySelector'
 import MeasurementHistory from '@/components/MeasurementHistory'
+import LogHistory from '@/components/LogHistory' // Importa el componente de logs
 import jsPDF from 'jspdf'
 import html2canvas from 'html2canvas'
 
@@ -26,7 +27,7 @@ export default function Dashboard() {
   const [measurements, setMeasurements] = useState<Measurement[]>([]) // Nuevo estado para mediciones
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  
+
   // Nuevo estado para la selección
   const [selectedAjolotary, setSelectedAjolotary] = useState<Ajolotary | null>(null)
 
@@ -147,22 +148,9 @@ export default function Dashboard() {
 
         {/* Histórico de Mediciones */}
         <div id="report-content">
-          <div className="mb-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Histórico de Mediciones</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {filteredMeasurements.length > 0 ? (
-                  <MeasurementHistory measurements={filteredMeasurements} />
-                ) : (
-                  <div className="text-center text-muted">No hay mediciones disponibles.</div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
+          <LogHistory />
         </div>
-
+        
         {/* Map */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7 mb-6">
           <Card className="col-span-7">

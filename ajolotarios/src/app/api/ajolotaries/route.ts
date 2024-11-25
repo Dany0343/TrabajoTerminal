@@ -3,7 +3,16 @@
 import { NextResponse } from 'next/server';
 import db from '@/lib/db';
 
+// Logging
+import { createLog } from '@/lib/logger';
+import { ActionType } from '@prisma/client';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '@/lib/auth';
+
 export async function GET() {
+  const session = await getServerSession(authOptions);
+  const userId = session?.user?.id;
+
   try {
     const ajolotaries = await db.ajolotary.findMany({
       include: {
@@ -11,6 +20,16 @@ export async function GET() {
         tanks: true,
       },
     });
+
+    // Registrar el log de lectura masiva
+    await createLog(
+      ActionType.READ,
+      'Ajolotary',
+      undefined, // No hay un entityId específico
+      userId,
+      `Lectura de todos los ajolotarios`
+    );
+
     return NextResponse.json(ajolotaries);
   } catch (error) {
     console.error(error);
@@ -19,6 +38,11 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+
+  const session = await getServerSession(authOptions);
+  const userId = session?.user?.id;
+
+
   try {
     const data = await request.json();
     const { name, location, description, permitNumber, active } = data;
@@ -37,6 +61,15 @@ export async function POST(request: Request) {
         active: active ?? true, // Por defecto es true si no se proporciona
       },
     });
+
+    // Registrar el log de creación
+    await createLog(
+      ActionType.CREATE,
+      'Ajolotary',
+      ajolotary.id,
+      userId,
+      JSON.stringify(data)
+    );
 
     return NextResponse.json(ajolotary, { status: 201 });
   } catch (error) {

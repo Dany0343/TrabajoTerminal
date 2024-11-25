@@ -179,6 +179,28 @@ export interface User {
   alerts: Alert[];
 }
 
+export interface Log {
+  id: number;
+  userId: number | null;
+  action: ActionType;
+  entity: string;
+  entityId: number | null;
+  timestamp: Date;
+  details: string | null;
+  user?: {
+    firstName: string;
+    lastName: string;
+    email: string;
+  };
+}
+
+export enum ActionType {
+  CREATE = 'CREATE',
+  READ = 'READ',
+  UPDATE = 'UPDATE',
+  DELETE = 'DELETE',
+}
+
 export interface Ajolotary {
   id: number;
   name: string;

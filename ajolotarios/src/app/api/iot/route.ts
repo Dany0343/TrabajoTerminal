@@ -1,13 +1,15 @@
 // app/api/iot/route.ts
 
-// app/api/measurements/azure/route.ts
-
 export const dynamic = 'force-dynamic';
 
 import { NextResponse } from 'next/server';
 import { AlertType, Priority as AlertPriority, AlertStatus } from '@prisma/client';
 import db from '@/lib/db';
 import { TelegramService } from '@/app/services/telegramService';
+
+// logging
+import { createLog } from '@/lib/logger';
+import { ActionType } from '@prisma/client';
 
 type AzureMeasurement = {
   sensorSerialNumber: string;
@@ -23,6 +25,9 @@ type AzurePayload = {
 };
 
 export async function POST(request: Request) {
+  // No hay usuario asociado para operaciones automatizadas
+  const userId = undefined;
+
   try {
     const payload: AzurePayload = await request.json();
     const { deviceSerialNumber, timestamp, measurements } = payload;
@@ -245,6 +250,15 @@ export async function POST(request: Request) {
       )
     );
 
+    // Registrar el log de creación masiva de mediciones
+    await createLog(
+      ActionType.CREATE,
+      'Measurement',
+      undefined,
+      userId,
+      `Creación masiva de mediciones para el dispositivo serialNumber ${payload.deviceSerialNumber}`
+    );
+
     return NextResponse.json(finalMeasurements, { status: 201 });
   } catch (error) {
     console.error('Error detallado:', error);
@@ -256,5 +270,3 @@ export async function POST(request: Request) {
     );
   }
 }
-
-// Checkpoint

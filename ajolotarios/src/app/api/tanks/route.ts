@@ -3,7 +3,17 @@
 import { NextResponse } from 'next/server';
 import db from "@/lib/db";
 
+// logging 
+import { createLog } from '@/lib/logger';
+import { ActionType } from '@prisma/client';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '@/lib/auth';
+
 export async function GET(request: Request) {
+
+  const session = await getServerSession(authOptions);
+  const userId = session?.user?.id;
+
   try {
     const { searchParams } = new URL(request.url);
     const ajolotaryIdParam = searchParams.get('ajolotaryId');
@@ -23,6 +33,16 @@ export async function GET(request: Request) {
         ajolotary: true, // Incluye datos del ajolotario relacionado
       },
     });
+
+    // Registrar el log de lectura masiva
+    await createLog(
+      ActionType.READ,
+      'Tank',
+      undefined,
+      userId,
+      `Lectura masiva de tanques con filtro ajolotaryId=${ajolotaryIdParam}`
+    );
+
     return NextResponse.json(tanks);
   } catch (error) {
     console.error(error);
@@ -31,6 +51,10 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+
+  const session = await getServerSession(authOptions);
+  const userId = session?.user?.id;
+
   try {
     const data = await request.json();
     const { name, capacity, observations, status, ajolotaryId } = data;
@@ -52,6 +76,15 @@ export async function POST(request: Request) {
         ajolotary: true, // Incluir datos del ajolotario relacionado en la respuesta
       },
     });
+
+    // Registrar el log de creación
+    await createLog(
+      ActionType.CREATE,
+      'Tank',
+      tank.id,
+      userId,
+      JSON.stringify({ name, capacity, observations, status, ajolotaryId })
+    );
 
     return NextResponse.json(tank, { status: 201 });
   } catch (error) {
