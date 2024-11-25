@@ -86,10 +86,13 @@ const LogHistory: React.FC = () => {
         if (filters.endDate) query.append('endDate', filters.endDate);
 
         const res = await fetch(`/api/logs?${query.toString()}`);
+        const data = await res.json(); // Get response data first
+    
         if (!res.ok) {
-          throw new Error('Error al obtener los logs');
+          // Check response status and throw with error message from API
+          throw new Error(data.error || 'Error al obtener los logs');
         }
-        const data: LogsResponse = await res.json();
+    
         setLogs(data.data);
         setTotalPages(data.totalPages);
       } catch (err: any) {
