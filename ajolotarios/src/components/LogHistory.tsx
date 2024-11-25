@@ -4,7 +4,7 @@
 
 import { useEffect, useState } from 'react';
 import { Log as PrismaLog, ActionType } from '@prisma/client';
-import { AppUser, Role } from '@/types/types'; // Importa AppUser en lugar de User
+import { User, Role } from '@/types/types'; 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
@@ -29,7 +29,7 @@ interface LogsResponse {
 const LogHistory: React.FC = () => {
   const { data: session, status } = useSession();
   const [logs, setLogs] = useState<Log[]>([]);
-  const [users, setUsers] = useState<AppUser[]>([]); // Cambiado a AppUser
+  const [users, setUsers] = useState<User[]>([]);
   const [filters, setFilters] = useState({
     userId: '',
     action: '',
@@ -52,7 +52,7 @@ const LogHistory: React.FC = () => {
         if (!res.ok) {
           throw new Error('Error al obtener los usuarios');
         }
-        const data: AppUser[] = await res.json();
+        const data: User[] = await res.json();
         setUsers(data);
       } catch (err) {
         console.error('Error fetching users:', err);

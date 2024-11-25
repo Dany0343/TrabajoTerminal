@@ -82,7 +82,7 @@ export interface Alert {
   resolvedBy?: number;
   notes?: string;
   measurement: Measurement;
-  resolver?: AppUser;
+  resolver?: User;
 }
 
 export enum AlertType {
@@ -107,7 +107,7 @@ export enum AlertStatus {
   ESCALATED = "ESCALATED"
 }
 
-export interface AppUser {
+export interface User {
   id: number;
   firstName: string;
   lastName: string;
@@ -148,7 +148,7 @@ export interface Ajolotary {
   description: string;
   permitNumber: string;
   active: boolean;
-  users: AppUser[];
+  users: User[];
   tanks: Tank[];
 }
 
