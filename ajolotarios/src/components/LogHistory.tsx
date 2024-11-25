@@ -75,6 +75,7 @@ const LogHistory: React.FC = () => {
   }, [session, status]);
 
   // Obtener logs cada vez que los filtros o la página cambien
+  // Add console log in useEffect when fetching logs
   useEffect(() => {
     if (status !== "authenticated" || session?.user.role !== Role.SUPER_ADMIN)
       return;
@@ -93,6 +94,10 @@ const LogHistory: React.FC = () => {
           ...(filters.endDate && { endDate: filters.endDate }),
         });
 
+        // Debug log
+        console.log("Current filters:", filters);
+        console.log("Query string:", query.toString());
+
         const response = await fetch(`/api/loggs?${query}`);
 
         if (!response.ok) {
@@ -100,6 +105,9 @@ const LogHistory: React.FC = () => {
         }
 
         const data = await response.json();
+        // Debug log
+        console.log("Response data:", data);
+
         setLogs(data.data);
         setTotalPages(data.totalPages);
       } catch (err) {
@@ -170,10 +178,15 @@ const LogHistory: React.FC = () => {
           {/* Entidad */}
           <Select
             onValueChange={(value) => {
+              console.log("Selected entity:", value); // Debug log
               const entity = value === "all" ? "" : value;
-              setFilters((prev) => ({ ...prev, entity }));
+              setFilters((prev) => {
+                const newFilters = { ...prev, entity };
+                console.log("New filters:", newFilters); // Debug log
+                return newFilters;
+              });
             }}
-            value={filters.entity}
+            value={filters.entity || "all"} // Add default value
           >
             <SelectTrigger>
               <SelectValue placeholder="Entidad" />
