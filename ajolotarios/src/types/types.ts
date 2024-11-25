@@ -1,4 +1,4 @@
-// src/types.ts
+// src/types/types.ts
 
 export interface Parameter {
   id: number;
@@ -21,7 +21,6 @@ export interface Device {
   serialNumber: string;
   status: string;
   tankId: number;
-  // Otras propiedades según tu esquema
   tank: Tank;
 }
 
@@ -31,14 +30,12 @@ export interface Tank {
   capacity: number;
   status: string;
   ajolotaryId: number;
-  // Otras propiedades según tu esquema
 }
 
 export interface SensorType {
   id: number;
   name: string;
   magnitude: string;
-  // Otras propiedades según tu esquema
 }
 
 export interface Sensor {
@@ -51,7 +48,6 @@ export interface Sensor {
   calibratedAt?: string; // Usa string si viene como ISO string desde la API
   type: SensorType;
   status: string;
-  // Otras propiedades según tu esquema
 }
 
 export interface Measurement {
@@ -73,62 +69,6 @@ export interface Measurement {
   isValid: boolean;
 }
 
-// model Alert {
-//   id            Int         @id @default(autoincrement())
-//   measurementId Int
-//   alertType     AlertType
-//   description   String      @db.Text
-//   priority      Priority
-//   status        AlertStatus @default(PENDING)
-//   createdAt     DateTime    @default(now())
-//   resolvedAt    DateTime?
-//   resolvedBy    Int?
-//   notes         String?
-//   measurement   Measurement @relation(fields: [measurementId], references: [id], onDelete: Cascade)
-//   resolver      User?       @relation(fields: [resolvedBy], references: [id])
-// }
-
-// enum AlertType {
-//   PARAMETER_OUT_OF_RANGE
-//   DEVICE_MALFUNCTION
-//   MAINTENANCE_REQUIRED
-//   SYSTEM_ERROR
-//   CALIBRATION_NEEDED
-//   HEALTH_ISSUE
-// }
-
-// num Priority {
-//   HIGH
-//   MEDIUM
-//   LOW
-// }
-
-// model User {
-//   id          Int         @id @default(autoincrement())
-//   firstName   String      @db.VarChar(50)
-//   lastName    String      @db.VarChar(50)
-//   email       String      @unique @db.VarChar(100)
-//   password    String
-//   role        Role        @default(AJOLATORY_SUBSCRIBER)
-//   phone       String      @db.VarChar(20)
-//   ajolotaries Ajolotary[]
-//   // createdBy     Int?
-//   // creator       User?       @relation("UserCreator", fields: [createdBy], references: [id])
-//   // createdUsers  User[]      @relation("UserCreator")
-//   Alert       Alert[]
-// }
-
-// model Ajolotary {
-//   id           Int     @id @default(autoincrement())
-//   name         String  @db.VarChar(100)
-//   location     String
-//   description  String  @db.Text
-//   permitNumber String  @db.VarChar(50)
-//   active       Boolean @default(true)
-//   users        User[]
-//   tanks        Tank[]
-// }
-
 
 export interface Alert {
   id: number;
@@ -142,7 +82,7 @@ export interface Alert {
   resolvedBy?: number;
   notes?: string;
   measurement: Measurement;
-  resolver?: User;
+  resolver?: AppUser;
 }
 
 export enum AlertType {
@@ -167,7 +107,7 @@ export enum AlertStatus {
   ESCALATED = "ESCALATED"
 }
 
-export interface User {
+export interface AppUser {
   id: number;
   firstName: string;
   lastName: string;
@@ -208,7 +148,7 @@ export interface Ajolotary {
   description: string;
   permitNumber: string;
   active: boolean;
-  users: User[];
+  users: AppUser[];
   tanks: Tank[];
 }
 
@@ -218,36 +158,6 @@ export enum Role {
   AJOLATORY_SUBSCRIBER = 'AJOLATORY_SUBSCRIBER'
 }
 
-
-// model Axolotl {
-//   id           Int          @id @default(autoincrement())
-//   name         String       @db.VarChar(50)
-//   species      String       @db.VarChar(50)
-//   age          Int
-//   health       HealthStatus
-//   size         Decimal      @db.Decimal(10, 2)
-//   weight       Decimal      @db.Decimal(10, 2)
-//   stage        LifeStage
-//   tankId       Int
-//   tank         Tank         @relation(fields: [tankId], references: [id], onDelete: Cascade)
-//   observations String[]
-// }
-
-// enum HealthStatus {
-//   HEALTHY
-//   SICK
-//   CRITICAL
-//   RECOVERING
-//   QUARANTINE
-// }
-
-// enum LifeStage {
-//   EGG
-//   LARVAE
-//   JUVENILE
-//   ADULT
-//   BREEDING
-// }
 
 export interface Axolotl {
   id: number;

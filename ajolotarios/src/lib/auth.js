@@ -1,7 +1,7 @@
 // lib/auth.js
 
 import CredentialsProvider from "next-auth/providers/credentials";
-import db from "@/lib/db"; // Asegúrate de que esta ruta sea correcta
+import db from "@/lib/db";
 import bcrypt from "bcrypt";
 
 export const authOptions = {
@@ -26,9 +26,9 @@ export const authOptions = {
 
         return {
           id: userFound.id,
-          name: userFound.username, // Asegúrate de que 'username' exista
+          name: userFound.firstName,
           email: userFound.email,
-          role: userFound.role, // Incluye 'role'
+          role: userFound.role,
         };
       },
     }),
@@ -40,14 +40,14 @@ export const authOptions = {
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
-        token.role = user.role; // Añade 'role' al token
+        token.role = user.role; 
       }
       return token;
     },
     async session({ session, token }) {
       if (session.user) {
         session.user.id = token.id;
-        session.user.role = token.role; // Añade 'role' a la sesión
+        session.user.role = token.role;
       }
       return session;
     },

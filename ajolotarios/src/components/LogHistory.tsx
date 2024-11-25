@@ -4,7 +4,7 @@
 
 import { useEffect, useState } from 'react';
 import { Log as PrismaLog, ActionType } from '@prisma/client';
-import { User, Role } from '@/types/types';
+import { AppUser, Role } from '@/types/types'; // Importa AppUser en lugar de User
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
@@ -15,6 +15,7 @@ interface Log extends PrismaLog {
   user?: {
     firstName: string;
     lastName: string;
+    email: string;
   } | null;
 }
 
@@ -28,7 +29,7 @@ interface LogsResponse {
 const LogHistory: React.FC = () => {
   const { data: session, status } = useSession();
   const [logs, setLogs] = useState<Log[]>([]);
-  const [users, setUsers] = useState<User[]>([]);
+  const [users, setUsers] = useState<AppUser[]>([]); // Cambiado a AppUser
   const [filters, setFilters] = useState({
     userId: '',
     action: '',
@@ -41,9 +42,9 @@ const LogHistory: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch users for the user filter
+  // Obtener usuarios para el filtro de usuario
   useEffect(() => {
-    if (status !== "authenticated" || session.user.role !== Role.SUPER_ADMIN) return;
+    if (status !== "authenticated" || session?.user.role !== Role.SUPER_ADMIN) return;
 
     const fetchUsers = async () => {
       try {
@@ -51,7 +52,7 @@ const LogHistory: React.FC = () => {
         if (!res.ok) {
           throw new Error('Error al obtener los usuarios');
         }
-        const data: User[] = await res.json();
+        const data: AppUser[] = await res.json();
         setUsers(data);
       } catch (err) {
         console.error('Error fetching users:', err);
@@ -61,9 +62,9 @@ const LogHistory: React.FC = () => {
     fetchUsers();
   }, [session, status]);
 
-  // Fetch logs whenever filters or page changes
+  // Obtener logs cada vez que los filtros o la página cambien
   useEffect(() => {
-    if (status !== "authenticated" || session.user.role !== Role.SUPER_ADMIN) return;
+    if (status !== "authenticated" || session?.user.role !== Role.SUPER_ADMIN) return;
 
     const fetchLogs = async () => {
       setLoading(true);
@@ -97,7 +98,7 @@ const LogHistory: React.FC = () => {
     fetchLogs();
   }, [filters, page, session, status]);
 
-  // Reset to first page when filters change
+  // Resetear a la primera página cuando los filtros cambien
   useEffect(() => {
     setPage(1);
   }, [filters]);
@@ -153,10 +154,10 @@ const LogHistory: React.FC = () => {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="">Todas</SelectItem>
-              <SelectItem value="Ajolotary">Ajolotary</SelectItem>
-              <SelectItem value="Tank">Tank</SelectItem>
+              <SelectItem value="Ajolotary">Ajolotario</SelectItem>
+              <SelectItem value="Tank">Tanque</SelectItem>
               <SelectItem value="Sensor">Sensor</SelectItem>
-              <SelectItem value="Measurement">Measurement</SelectItem>
+              <SelectItem value="Measurement">Medición</SelectItem>
               {/* Agrega más entidades según tu esquema */}
             </SelectContent>
           </Select>
