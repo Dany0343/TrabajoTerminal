@@ -70,39 +70,33 @@ const LogHistory: React.FC = () => {
   // Obtener logs cada vez que los filtros o la página cambien
   useEffect(() => {
     if (status !== "authenticated" || session?.user.role !== Role.SUPER_ADMIN) return;
-
+    
     const fetchLogs = async () => {
       setLoading(true);
       setError(null);
       try {
-        const query = new URLSearchParams();
-        query.append('page', page.toString());
-        query.append('limit', '10'); // Puedes hacer esto configurable si lo deseas
-
-        if (filters.userId) query.append('userId', filters.userId);
-        if (filters.action) query.append('action', filters.action);
-        if (filters.entity) query.append('entity', filters.entity);
-        if (filters.startDate) query.append('startDate', filters.startDate);
-        if (filters.endDate) query.append('endDate', filters.endDate);
-
-        const res = await fetch(`/api/logs?${query.toString()}`);
-        const data = await res.json();
+        const query = new URLSearchParams({
+          page: page.toString(),
+          limit: '10',
+          ...(filters.userId && { userId: filters.userId }),
+          ...(filters.action && { action: filters.action }),
+          ...(filters.entity && { entity: filters.entity }),
+          ...(filters.startDate && { startDate: filters.startDate }),
+          ...(filters.endDate && { endDate: filters.endDate }),
+        });
     
-        if (!res.ok) {
-            if (res.status === 404) {
-              throw new Error('API endpoint not found');
-            }
-            const errorData = await res.json().catch(() => ({}));
-            throw new Error(errorData.error || 'Error de servidor');
-          }
-    
+        const response = await fetch(`/api/logs?${query}`);
+        
+        if (!response.ok) {
+          throw new Error(`Error: ${response.status}`);
+        }
+        
+        const data = await response.json();
         setLogs(data.data);
         setTotalPages(data.totalPages);
-        setLogs(data.data || []);
-        setTotalPages(data.totalPages || 1);
-      } catch (err: any) {
+      } catch (err) {
         console.error('Error fetching logs:', err);
-        setError(err.message);
+        setError(err instanceof Error ? err.message : 'Error desconocido');
       } finally {
         setLoading(false);
       }
