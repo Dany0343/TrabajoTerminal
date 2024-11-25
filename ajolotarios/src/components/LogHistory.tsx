@@ -1,15 +1,21 @@
 // src/components/LogHistory.tsx
 
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { Log as PrismaLog, ActionType } from '@prisma/client';
-import { User, Role } from '@/types/types';
+import { useEffect, useState } from "react";
+import { Log as PrismaLog, ActionType } from "@prisma/client";
+import { User, Role } from "@/types/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { useSession } from 'next-auth/react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { useSession } from "next-auth/react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 interface Log extends PrismaLog {
   user?: {
@@ -31,11 +37,11 @@ const LogHistory: React.FC = () => {
   const [logs, setLogs] = useState<Log[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [filters, setFilters] = useState({
-    userId: '',
-    action: '',  
-    entity: '',  
-    startDate: '',
-    endDate: '',
+    userId: "",
+    action: "",
+    entity: "",
+    startDate: "",
+    endDate: "",
   });
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -44,23 +50,24 @@ const LogHistory: React.FC = () => {
 
   // Debugging: Inspeccionar la sesión
   useEffect(() => {
-    console.log('Session Data:', session);
+    console.log("Session Data:", session);
   }, [session]);
 
   // Obtener usuarios para el filtro de usuario
   useEffect(() => {
-    if (status !== "authenticated" || session?.user.role !== Role.SUPER_ADMIN) return;
+    if (status !== "authenticated" || session?.user.role !== Role.SUPER_ADMIN)
+      return;
 
     const fetchUsers = async () => {
       try {
-        const res = await fetch('/api/users');
+        const res = await fetch("/api/users");
         if (!res.ok) {
-          throw new Error('Error al obtener los usuarios');
+          throw new Error("Error al obtener los usuarios");
         }
         const data: User[] = await res.json();
         setUsers(data);
       } catch (err) {
-        console.error('Error fetching users:', err);
+        console.error("Error fetching users:", err);
       }
     };
 
@@ -69,34 +76,35 @@ const LogHistory: React.FC = () => {
 
   // Obtener logs cada vez que los filtros o la página cambien
   useEffect(() => {
-    if (status !== "authenticated" || session?.user.role !== Role.SUPER_ADMIN) return;
-    
+    if (status !== "authenticated" || session?.user.role !== Role.SUPER_ADMIN)
+      return;
+
     const fetchLogs = async () => {
       setLoading(true);
       setError(null);
       try {
         const query = new URLSearchParams({
           page: page.toString(),
-          limit: '10',
+          limit: "10",
           ...(filters.userId && { userId: filters.userId }),
           ...(filters.action && { action: filters.action }),
           ...(filters.entity && { entity: filters.entity }),
           ...(filters.startDate && { startDate: filters.startDate }),
           ...(filters.endDate && { endDate: filters.endDate }),
         });
-    
+
         const response = await fetch(`/api/loggs?${query}`);
-        
+
         if (!response.ok) {
           throw new Error(`Error: ${response.status}`);
         }
-        
+
         const data = await response.json();
         setLogs(data.data);
         setTotalPages(data.totalPages);
       } catch (err) {
-        console.error('Error fetching logs:', err);
-        setError(err instanceof Error ? err.message : 'Error desconocido');
+        console.error("Error fetching logs:", err);
+        setError(err instanceof Error ? err.message : "Error desconocido");
       } finally {
         setLoading(false);
       }
@@ -111,10 +119,12 @@ const LogHistory: React.FC = () => {
   }, [filters]);
 
   const handleFilterChange = (
-    e: React.ChangeEvent<HTMLInputElement> | { target: { name: string; value: string } }
+    e:
+      | React.ChangeEvent<HTMLInputElement>
+      | { target: { name: string; value: string } }
   ) => {
     const { name, value } = e.target;
-    setFilters(prev => ({ ...prev, [name]: value }));
+    setFilters((prev) => ({ ...prev, [name]: value }));
   };
 
   // Manejar diferentes estados de sesión
@@ -123,7 +133,11 @@ const LogHistory: React.FC = () => {
   }
 
   if (!session || session.user.role !== Role.SUPER_ADMIN) {
-    return <div className="text-center text-red-500">No tienes permisos para ver esta sección.</div>;
+    return (
+      <div className="text-center text-red-500">
+        No tienes permisos para ver esta sección.
+      </div>
+    );
   }
 
   return (
@@ -137,49 +151,47 @@ const LogHistory: React.FC = () => {
           {/* Acción */}
           <Select
             onValueChange={(value) => {
-                const userId = value === 'all' ? '' : value;
-                setFilters(prev => ({ ...prev, userId }));
-              }}
+              const action = value === "all" ? "" : value;
+              setFilters((prev) => ({ ...prev, action }));
+            }}
             value={filters.action}
           >
             <SelectTrigger>
               <SelectValue placeholder="Acción" />
             </SelectTrigger>
             <SelectContent>
-                <SelectItem value="all">Todas</SelectItem>
-                <SelectItem value="CREATE">Crear</SelectItem>
-                <SelectItem value="UPDATE">Actualizar</SelectItem>
-                <SelectItem value="DELETE">Eliminar</SelectItem>
+              <SelectItem value="all">Todas</SelectItem>
+              <SelectItem value="CREATE">Crear</SelectItem>
+              <SelectItem value="UPDATE">Actualizar</SelectItem>
+              <SelectItem value="DELETE">Eliminar</SelectItem>
             </SelectContent>
           </Select>
 
           {/* Entidad */}
           <Select
             onValueChange={(value) => {
-                const userId = value === 'all' ? '' : value;
-                setFilters(prev => ({ ...prev, userId }));
-              }}
+              const entity = value === "all" ? "" : value;
+              setFilters((prev) => ({ ...prev, entity }));
+            }}
             value={filters.entity}
           >
             <SelectTrigger>
               <SelectValue placeholder="Entidad" />
             </SelectTrigger>
             <SelectContent>
-                <SelectItem value="all">Todas</SelectItem>
-                <SelectItem value="AJOLOTARY">Ajolotario</SelectItem>
-                <SelectItem value="TANK">Tanque</SelectItem>
-                <SelectItem value="SENSOR">Sensor</SelectItem>
-                <SelectItem value="MEASUREMENT">Medición</SelectItem>
-              {/* Agrega más entidades según tu esquema */}
+              <SelectItem value="all">Todas</SelectItem>
+              <SelectItem value="AJOLOTARY">Ajolotario</SelectItem>
+              <SelectItem value="TANK">Tanque</SelectItem>
+              <SelectItem value="SENSOR">Sensor</SelectItem>
+              <SelectItem value="MEASUREMENT">Medición</SelectItem>
             </SelectContent>
           </Select>
-
           {/* Usuario */}
           <Select
             onValueChange={(value) => {
-                const userId = value === 'all' ? '' : value;
-                setFilters(prev => ({ ...prev, userId }));
-              }}
+              const userId = value === "all" ? "" : value;
+              setFilters((prev) => ({ ...prev, userId }));
+            }}
             value={filters.userId}
           >
             <SelectTrigger>
@@ -187,7 +199,7 @@ const LogHistory: React.FC = () => {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todos</SelectItem>
-              {users.map(user => (
+              {users.map((user) => (
                 <SelectItem key={user.id} value={user.id.toString()}>
                   {user.firstName} {user.lastName}
                 </SelectItem>
@@ -233,11 +245,15 @@ const LogHistory: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {logs.map(log => (
+                  {logs.map((log) => (
                     <tr key={log.id} className="border-t">
-                      <td className="px-4 py-2">{new Date(log.timestamp).toLocaleString()}</td>
                       <td className="px-4 py-2">
-                        {log.user ? `${log.user.firstName} ${log.user.lastName}` : 'Sistema/Automático'}
+                        {new Date(log.timestamp).toLocaleString()}
+                      </td>
+                      <td className="px-4 py-2">
+                        {log.user
+                          ? `${log.user.firstName} ${log.user.lastName}`
+                          : "Sistema/Automático"}
                       </td>
                       <td className="px-4 py-2">{log.action}</td>
                       <td className="px-4 py-2">{log.entity}</td>
@@ -252,9 +268,11 @@ const LogHistory: React.FC = () => {
             <div className="flex justify-between items-center mt-4">
               <button
                 className={`flex items-center px-4 py-2 rounded ${
-                  page === 1 ? 'bg-gray-300 cursor-not-allowed' : 'bg-blue-500 text-white'
+                  page === 1
+                    ? "bg-gray-300 cursor-not-allowed"
+                    : "bg-blue-500 text-white"
                 }`}
-                onClick={() => setPage(prev => Math.max(prev - 1, 1))}
+                onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
                 disabled={page === 1}
               >
                 <ChevronLeft className="h-4 w-4" />
@@ -265,9 +283,13 @@ const LogHistory: React.FC = () => {
               </span>
               <button
                 className={`flex items-center px-4 py-2 rounded ${
-                  page === totalPages ? 'bg-gray-300 cursor-not-allowed' : 'bg-blue-500 text-white'
+                  page === totalPages
+                    ? "bg-gray-300 cursor-not-allowed"
+                    : "bg-blue-500 text-white"
                 }`}
-                onClick={() => setPage(prev => Math.min(prev + 1, totalPages))}
+                onClick={() =>
+                  setPage((prev) => Math.min(prev + 1, totalPages))
+                }
                 disabled={page === totalPages}
               >
                 Siguiente
@@ -276,7 +298,9 @@ const LogHistory: React.FC = () => {
             </div>
           </>
         ) : (
-          <div className="text-center text-muted">No hay operaciones registradas.</div>
+          <div className="text-center text-muted">
+            No hay operaciones registradas.
+          </div>
         )}
       </CardContent>
     </Card>
@@ -284,5 +308,3 @@ const LogHistory: React.FC = () => {
 };
 
 export default LogHistory;
-
-// xdd
