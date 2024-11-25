@@ -85,7 +85,7 @@ const LogHistory: React.FC = () => {
           ...(filters.endDate && { endDate: filters.endDate }),
         });
     
-        const response = await fetch(`/api/logs?${query}`);
+        const response = await fetch(`/api/loggs?${query}`);
         
         if (!response.ok) {
           throw new Error(`Error: ${response.status}`);
