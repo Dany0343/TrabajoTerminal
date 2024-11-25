@@ -136,13 +136,17 @@ const LogHistory: React.FC = () => {
         <div className="flex flex-wrap gap-4 mb-4">
           {/* Acción */}
           <Select
-            onValueChange={(value) => setFilters(prev => ({ ...prev, action: value }))}
+            onValueChange={(value) => {
+                const userId = value === 'all' ? '' : value;
+                setFilters(prev => ({ ...prev, userId }));
+              }}
             value={filters.action}
           >
             <SelectTrigger>
               <SelectValue placeholder="Acción" />
             </SelectTrigger>
             <SelectContent>
+                <SelectItem value="all">Todas</SelectItem>
                 <SelectItem value="CREATE">Crear</SelectItem>
                 <SelectItem value="READ">Leer</SelectItem>
                 <SelectItem value="UPDATE">Actualizar</SelectItem>
@@ -152,13 +156,17 @@ const LogHistory: React.FC = () => {
 
           {/* Entidad */}
           <Select
-            onValueChange={(value) => setFilters(prev => ({ ...prev, entity: value }))}
+            onValueChange={(value) => {
+                const userId = value === 'all' ? '' : value;
+                setFilters(prev => ({ ...prev, userId }));
+              }}
             value={filters.entity}
           >
             <SelectTrigger>
               <SelectValue placeholder="Entidad" />
             </SelectTrigger>
             <SelectContent>
+                <SelectItem value="all">Todas</SelectItem>
                 <SelectItem value="AJOLOTARY">Ajolotario</SelectItem>
                 <SelectItem value="TANK">Tanque</SelectItem>
                 <SelectItem value="SENSOR">Sensor</SelectItem>
@@ -169,14 +177,17 @@ const LogHistory: React.FC = () => {
 
           {/* Usuario */}
           <Select
-            onValueChange={(value) => setFilters(prev => ({ ...prev, userId: value }))}
+            onValueChange={(value) => {
+                const userId = value === 'all' ? '' : value;
+                setFilters(prev => ({ ...prev, userId }));
+              }}
             value={filters.userId}
           >
             <SelectTrigger>
               <SelectValue placeholder="Usuario" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Todos</SelectItem>
+              <SelectItem value="all">Todos</SelectItem>
               {users.map(user => (
                 <SelectItem key={user.id} value={user.id.toString()}>
                   {user.firstName} {user.lastName}
