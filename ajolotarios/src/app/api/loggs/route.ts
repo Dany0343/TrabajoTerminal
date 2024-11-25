@@ -16,42 +16,47 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const page = parseInt(searchParams.get("page") || "1");
   const limit = parseInt(searchParams.get("limit") || "10");
-  const userId = searchParams.get("userId");
-  const action = searchParams.get("action");
-  const entity = searchParams.get("entity");
-  const startDate = searchParams.get("startDate");
-  const endDate = searchParams.get("endDate");
-
+  
   try {
-    const where: any = {};
+    const where: any = {
+      // Exclude READ operations
+      action: {
+        in: ['CREATE', 'UPDATE', 'DELETE']
+      }
+    };
     
-    if (userId) where.userId = parseInt(userId);
-    if (action) where.action = action;
-    if (entity) where.entity = entity;
-    if (startDate || endDate) {
+    // Add other filters
+    if (searchParams.get("userId")) where.userId = parseInt(searchParams.get("userId")!);
+    if (searchParams.get("action")) where.action = searchParams.get("action");
+    if (searchParams.get("entity")) where.entity = searchParams.get("entity");
+    
+    // Date filters
+    if (searchParams.get("startDate") || searchParams.get("endDate")) {
       where.timestamp = {};
-      if (startDate) where.timestamp.gte = new Date(startDate);
-      if (endDate) where.timestamp.lte = new Date(endDate);
+      if (searchParams.get("startDate")) where.timestamp.gte = new Date(searchParams.get("startDate")!);
+      if (searchParams.get("endDate")) where.timestamp.lte = new Date(searchParams.get("endDate")!);
     }
 
-    const total = await db.log.count({ where });
-    const logs = await db.log.findMany({
-      where,
-      include: {
-        user: {
-          select: {
-            firstName: true,
-            lastName: true,
-            email: true,
+    const [total, logs] = await Promise.all([
+      db.log.count({ where }),
+      db.log.findMany({
+        where,
+        include: {
+          user: {
+            select: {
+              firstName: true,
+              lastName: true,
+              email: true,
+            },
           },
         },
-      },
-      orderBy: {
-        timestamp: "desc",
-      },
-      skip: (page - 1) * limit,
-      take: limit,
-    });
+        orderBy: {
+          timestamp: "desc",
+        },
+        skip: (page - 1) * limit,
+        take: limit,
+      })
+    ]);
 
     return NextResponse.json({
       data: logs,

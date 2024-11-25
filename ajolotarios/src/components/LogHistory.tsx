@@ -148,7 +148,6 @@ const LogHistory: React.FC = () => {
             <SelectContent>
                 <SelectItem value="all">Todas</SelectItem>
                 <SelectItem value="CREATE">Crear</SelectItem>
-                <SelectItem value="READ">Leer</SelectItem>
                 <SelectItem value="UPDATE">Actualizar</SelectItem>
                 <SelectItem value="DELETE">Eliminar</SelectItem>
             </SelectContent>
