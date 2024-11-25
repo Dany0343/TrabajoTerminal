@@ -4,7 +4,7 @@
 
 import { useEffect, useState } from 'react';
 import { Log as PrismaLog, ActionType } from '@prisma/client';
-import { User, Role } from '@/types/types'; 
+import { User, Role } from '@/types/types';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
@@ -41,6 +41,11 @@ const LogHistory: React.FC = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Debugging: Inspeccionar la sesión
+  useEffect(() => {
+    console.log('Session Data:', session);
+  }, [session]);
 
   // Obtener usuarios para el filtro de usuario
   useEffect(() => {
