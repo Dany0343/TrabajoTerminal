@@ -25,9 +25,19 @@ type AzurePayload = {
 };
 
 export async function POST(request: Request) {
-   // Validar API key
-  const apiKey = request.headers.get('x-api-key');
   const expectedApiKey = process.env.FUNCTION_KEY;
+
+  // Add debugging logs
+  console.log('Received headers:', Object.fromEntries(request.headers));
+  console.log('Expected API key:', process.env.FUNCTION_KEY);
+  
+  const apiKey = request.headers.get('x-function-key');
+  console.log('Received API key:', apiKey);
+
+  if (!apiKey || apiKey !== process.env.API_KEY) {
+    console.log('Auth failed - received:', apiKey, 'expected:', process.env.API_KEY);
+    return new NextResponse('Unauthorized', { status: 401 });
+  }
 
   if (!apiKey || apiKey !== expectedApiKey) {
     return new NextResponse('Unauthorized', { status: 401 });
