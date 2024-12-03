@@ -25,6 +25,14 @@ type AzurePayload = {
 };
 
 export async function POST(request: Request) {
+   // Validar API key
+  const apiKey = request.headers.get('x-api-key');
+  const expectedApiKey = process.env.API_KEY;
+
+  if (!apiKey || apiKey !== expectedApiKey) {
+    return new NextResponse('Unauthorized', { status: 401 });
+  }
+  
   // No hay usuario asociado para operaciones automatizadas
   const userId = undefined;
 
