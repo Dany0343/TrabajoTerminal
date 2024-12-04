@@ -1,15 +1,12 @@
 // app/api/iot/route.ts
 
-export const dynamic = 'force-dynamic';
-
 import { NextResponse } from 'next/server';
-import { AlertType, Priority as AlertPriority, AlertStatus } from '@prisma/client';
+import { AlertType, Priority as AlertPriority, AlertStatus, ActionType } from '@prisma/client';
 import db from '@/lib/db';
 import { TelegramService } from '@/app/services/telegramService';
 
-// logging
+// Logging
 import { createLog } from '@/lib/logger';
-import { ActionType } from '@prisma/client';
 
 type AzureMeasurement = {
   sensorSerialNumber: string;
@@ -24,23 +21,41 @@ type AzurePayload = {
   measurements: AzureMeasurement[];
 };
 
+export const dynamic = 'force-dynamic';
+
+/**
+ * Handler para solicitudes POST
+ * @param {Request} request - La solicitud entrante
+ * @returns {NextResponse} - La respuesta de la API
+ */
 export async function POST(request: Request) {
   const expectedApiKey = process.env.FUNCTION_KEY;
   const apiKey = request.headers.get('x-function-key');
 
-  // Remove duplicate check and use single validation
+  // Verificar la autenticación
   if (!apiKey || apiKey !== expectedApiKey) {
     console.log('Auth failed - received:', apiKey, 'expected:', expectedApiKey);
     return new NextResponse('Unauthorized', { status: 401 });
   }
-  
+
   // No hay usuario asociado para operaciones automatizadas
   const userId = undefined;
 
   try {
+    // Parsear el payload JSON
     const payload: AzurePayload = await request.json();
+    
+    // Log del payload recibido para depuración
+    console.log('Payload recibido:', JSON.stringify(payload, null, 2));
+
     const { deviceSerialNumber, timestamp, measurements } = payload;
 
+    // Verificar que el deviceSerialNumber está presente
+    if (!deviceSerialNumber) {
+      throw new Error('deviceSerialNumber es requerido pero no fue proporcionado.');
+    }
+
+    // Buscar el dispositivo en la base de datos
     const device = await db.device.findUnique({
       where: { serialNumber: deviceSerialNumber },
       include: { sensors: true },
@@ -72,7 +87,7 @@ export async function POST(request: Request) {
         return db.measurement.create({
           data: {
             deviceId: device.id,
-            sensorId: sensor.id, // Ahora cada medición usa su sensor específico
+            sensorId: sensor.id, // Cada medición usa su sensor específico
             dateTime: new Date(timestamp),
             isValid: true,
             parameters: {
@@ -279,3 +294,4 @@ export async function POST(request: Request) {
     );
   }
 }
+
