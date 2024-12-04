@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "logger": "^0.0.1",
     "swr": "^2.2.5"
   }
 }
