@@ -11,11 +11,13 @@ import dynamic from 'next/dynamic'
 import LoadingSpinner from '@/components/LoadingSpinner' 
 import AjolotarySelector from '@/components/AjolotarySelector'
 import MeasurementHistory from '@/components/MeasurementHistory'
-import LogHistory from '@/components/LogHistory' // Importa el componente de logs
+import LogHistory from '@/components/LogHistory'
 import jsPDF from 'jspdf'
 import html2canvas from 'html2canvas'
 
-import { Ajolotary, Tank, Axolotl, Alert, Measurement } from '@/types/types'
+import { Ajolotary, Tank, Axolotl, Alert, Measurement, Sensor } from '@/types/types'
+
+import DashboardCharts from '@/components/DashboardCharts' 
 
 const Map = dynamic(() => import('@/components/Map'), { ssr: false, loading: () => <LoadingSpinner /> })
 
@@ -24,7 +26,8 @@ export default function Dashboard() {
   const [tanks, setTanks] = useState<Tank[]>([])
   const [axolotls, setAxolotls] = useState<Axolotl[]>([])
   const [alerts, setAlerts] = useState<Alert[]>([])
-  const [measurements, setMeasurements] = useState<Measurement[]>([]) // Nuevo estado para mediciones
+  const [measurements, setMeasurements] = useState<Measurement[]>([]) 
+  const [sensors, setSensors] = useState<Sensor[]>([]) 
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -39,7 +42,8 @@ export default function Dashboard() {
           fetch('/api/tanks'),
           fetch('/api/axolotls'),
           fetch('/api/alerts'),
-          fetch('/api/measurements') 
+          fetch('/api/measurements'),
+          fetch('/api/sensors')
         ])
 
         if (!ajolotariesRes.ok || !tanksRes.ok || !axolotlsRes.ok || !alertsRes.ok || !measurementsRes.ok) {
@@ -149,6 +153,15 @@ export default function Dashboard() {
         {/* Histórico de Mediciones */}
         <div id="report-content">
           <LogHistory />
+        </div>
+
+        {/* Gráficas */}
+        <div className="my-8">
+          <DashboardCharts 
+            measurements={filteredMeasurements} 
+            alerts={alerts} 
+            sensors={sensors} 
+          />
         </div>
         
         {/* Map */}

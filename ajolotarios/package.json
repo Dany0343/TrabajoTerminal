@@ -26,7 +26,7 @@
     "@vis.gl/react-google-maps": "^0.4.2",
     "axios": "^1.6.5",
     "bcrypt": "^5.1.1",
-    "chart.js": "^4.4.6",
+    "chart.js": "^4.4.7",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
     "date-fns": "^3.6.0",
@@ -44,6 +44,7 @@
     "react-leaflet": "^4.2.1",
     "react-modal": "^3.16.1",
     "react-select": "^5.8.2",
+    "recharts": "^2.14.1",
     "tailwind-merge": "^2.5.2",
     "tailwindcss-animate": "^1.0.7",
     "web-push": "^3.6.7"
