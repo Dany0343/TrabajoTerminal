@@ -137,29 +137,36 @@ export async function POST(request: Request) {
       >((alerts, param) => {
         const rule = rules.find((r) => r.parameterId === param.parameterId);
         if (!rule) return alerts;
-
+    
         const originalMeasurement = measurements.find(
           (m) => m.parameterName === rule.parameter.name
         );
-
+    
         if (!originalMeasurement) return alerts;
-
+    
         const paramValue = Number(param.value);
         const minValue = rule.optimalMin ? Number(rule.optimalMin) : null;
         const maxValue = rule.optimalMax ? Number(rule.optimalMax) : null;
-
+    
         let outOfRange = false;
         let description = '';
-
+    
         if (minValue !== null && paramValue < minValue) {
           outOfRange = true;
           description += `${rule.parameter.name} (${paramValue}) está por debajo del mínimo (${minValue}). `;
         }
+    
         if (maxValue !== null && paramValue > maxValue) {
           outOfRange = true;
           description += `${rule.parameter.name} (${paramValue}) está por encima del máximo (${maxValue}). `;
         }
-
+    
+        // Si no está fuera de rango pero originalMeasurement.alert es true,
+        // damos un mensaje más detallado que el genérico.
+        if (!outOfRange && originalMeasurement.alert) {
+          description = `Se reportó una alerta para el parámetro ${rule.parameter.name} a pesar de no exceder los límites establecidos. Valor actual: ${paramValue}`;
+        }
+    
         if (outOfRange || originalMeasurement.alert) {
           alerts.push({
             measurementId: measurement.id,
@@ -170,7 +177,7 @@ export async function POST(request: Request) {
             status: AlertStatus.PENDING,
           });
         }
-
+    
         return alerts;
       }, []);
     });
