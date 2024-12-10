@@ -2,7 +2,7 @@
 
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import {
   LineChart,
   Line,
@@ -18,6 +18,9 @@ import {
   Pie,
   Cell,
 } from 'recharts';
+import Select from 'react-select';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
 import { Measurement, Alert, Sensor } from '@/types/types';
 
 interface DashboardChartsProps {
@@ -26,27 +29,85 @@ interface DashboardChartsProps {
   sensors: Sensor[];
 }
 
+interface Option {
+  value: any;
+  label: string;
+}
+
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#AA336A'];
 
 const DashboardCharts: React.FC<DashboardChartsProps> = ({ measurements, alerts, sensors }) => {
-  
-  // Gráfico 1: Variación de valores de un sensor específico a lo largo del tiempo
+  const [selectedSensorIds, setSelectedSensorIds] = useState<number[]>([]);
+  const [selectedParameters, setSelectedParameters] = useState<string[]>([]);
+  const [dateRange, setDateRange] = useState<[Date | undefined, Date | undefined]>([undefined, undefined]);
+  const [startDate, endDate] = dateRange;
+
+  // Opciones de sensores para el selector multi
+  const sensorOptions: Option[] = useMemo(
+    () =>
+      sensors.map(sensor => ({
+        value: sensor.id,
+        label: `${sensor.model} (${sensor.serialNumber})`,
+      })),
+    [sensors]
+  );
+
+  // Opciones de parámetros disponibles
+  const parameterOptions: Option[] = useMemo(() => {
+    const params = new Set<string>();
+    measurements.forEach(m => {
+      m.parameters.forEach(p => params.add(p.parameter.name));
+    });
+    return Array.from(params).map(param => ({
+      value: param,
+      label: param,
+    }));
+  }, [measurements]);
+
+  // Gráfico 1: Variación de valores de sensores específicos a lo largo del tiempo
   const sensorData = useMemo(() => {
-    // Selecciona el primer sensor para este ejemplo
-    const selectedSensor = sensors[0];
-    if (!selectedSensor) return [];
+    let filteredMeasurements = measurements;
 
-    // Asegúrate de que el parámetro 'Temperature' existe en tus datos
-    const filteredMeasurements = measurements
-      .filter(m => m.sensorId === selectedSensor.id)
-      .map(m => ({
-        date: new Date(m.dateTime).toLocaleString(),
-        value: m.parameters.find(p => p.parameter.name === 'Temperature')?.value || 0, // Ajusta 'Temperature' según tu parámetro
-      }))
-      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    // Filtrar por sensores seleccionados
+    if (selectedSensorIds.length > 0) {
+      filteredMeasurements = filteredMeasurements.filter(m => selectedSensorIds.includes(m.sensorId));
+    }
 
-    return filteredMeasurements;
-  }, [measurements, sensors]);
+    // Filtrar por parámetros seleccionados
+    if (selectedParameters.length > 0) {
+      filteredMeasurements = filteredMeasurements.filter(m =>
+        m.parameters.some(p => selectedParameters.includes(p.parameter.name))
+      );
+    }
+
+    // Filtrar por rango de fechas
+    if (startDate && endDate) {
+      filteredMeasurements = filteredMeasurements.filter(m => {
+        const mDate = new Date(m.dateTime);
+        return mDate >= startDate && mDate <= endDate;
+      });
+    }
+
+    // Organizar datos para múltiples líneas
+    const dataMap: { [key: string]: any } = {};
+
+    filteredMeasurements.forEach(m => {
+      const date = new Date(m.dateTime).toLocaleString();
+      if (!dataMap[date]) {
+        dataMap[date] = { date };
+      }
+      m.parameters.forEach(p => {
+        if (selectedParameters.length === 0 || selectedParameters.includes(p.parameter.name)) {
+          dataMap[date][p.parameter.name] = p.value;
+        }
+      });
+    });
+
+    // Convertir el mapa a un array ordenado
+    const data = Object.values(dataMap).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+    return data;
+  }, [measurements, selectedSensorIds, selectedParameters, startDate, endDate]);
 
   // Gráfico 2: Número de alertas por tipo
   const alertData = useMemo(() => {
@@ -82,12 +143,79 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({ measurements, alerts,
 
   return (
     <div className="space-y-8">
+      {/* Selectores de Filtros */}
+      <div className="flex flex-col md:flex-row md:space-x-4 space-y-4 md:space-y-0 mb-8">
+        {/* Selector de Sensores */}
+        <div className="flex-1">
+          <label htmlFor="sensor-select" className="block text-sm font-medium text-gray-700 mb-1">
+            Seleccionar Sensores
+          </label>
+          <Select
+            isMulti
+            name="sensors"
+            options={sensorOptions}
+            className="basic-multi-select"
+            classNamePrefix="select"
+            onChange={(selectedOptions) => {
+              const ids = selectedOptions ? selectedOptions.map(option => option.value) : [];
+              setSelectedSensorIds(ids);
+            }}
+            placeholder="Selecciona uno o más sensores..."
+          />
+        </div>
+
+        {/* Selector de Parámetros */}
+        <div className="flex-1">
+          <label htmlFor="parameter-select" className="block text-sm font-medium text-gray-700 mb-1">
+            Seleccionar Parámetros
+          </label>
+          <Select
+            isMulti
+            name="parameters"
+            options={parameterOptions}
+            className="basic-multi-select"
+            classNamePrefix="select"
+            onChange={(selectedOptions) => {
+              const params = selectedOptions ? selectedOptions.map(option => option.value) : [];
+              setSelectedParameters(params);
+            }}
+            placeholder="Selecciona uno o más parámetros..."
+          />
+        </div>
+
+        {/* Selector de Rango de Fechas */}
+        <div className="flex-1">
+          <label htmlFor="date-range" className="block text-sm font-medium text-gray-700 mb-1">
+            Rango de Fechas
+          </label>
+          <DatePicker
+            selectsRange={true}
+            startDate={startDate}
+            endDate={endDate}
+            onChange={(update) => {
+              // Asegúrate de que update sea un array con Date | undefined
+              if (update) {
+                setDateRange([
+                  update[0] ? new Date(update[0]) : undefined,
+                  update[1] ? new Date(update[1]) : undefined,
+                ]);
+              } else {
+                setDateRange([undefined, undefined]);
+              }
+            }}
+            isClearable={true}
+            className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+            placeholderText="Selecciona un rango de fechas"
+          />
+        </div>
+      </div>
+
       {/* Gráfico 1: Variación de Valores de Sensor */}
       <div className="bg-white p-4 rounded shadow">
         <h2 className="text-lg font-semibold mb-4">
-          Variación de Temperatura del Sensor {sensors[0]?.model || 'N/A'}
+          Variación de Parámetros
         </h2>
-        {sensorData.length > 0 ? (
+        {sensorData.length > 0 && selectedParameters.length > 0 ? (
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={sensorData}>
               <CartesianGrid strokeDasharray="3 3" />
@@ -95,11 +223,20 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({ measurements, alerts,
               <YAxis />
               <Tooltip />
               <Legend />
-              <Line type="monotone" dataKey="value" name="Temperatura" stroke="#8884d8" />
+              {selectedParameters.map((param, index) => (
+                <Line
+                  key={param}
+                  type="monotone"
+                  dataKey={param}
+                  name={param}
+                  stroke={COLORS[index % COLORS.length]}
+                  dot={false}
+                />
+              ))}
             </LineChart>
           </ResponsiveContainer>
         ) : (
-          <p>No hay datos disponibles para este sensor.</p>
+          <p className="text-center text-gray-500">Selecciona al menos un sensor y un parámetro para visualizar los datos.</p>
         )}
       </div>
 
@@ -118,7 +255,7 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({ measurements, alerts,
             </BarChart>
           </ResponsiveContainer>
         ) : (
-          <p>No hay alertas para mostrar.</p>
+          <p className="text-center text-gray-500">No hay alertas para mostrar.</p>
         )}
       </div>
 
@@ -147,7 +284,7 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({ measurements, alerts,
             </PieChart>
           </ResponsiveContainer>
         ) : (
-          <p>No hay datos de estado de sensores para mostrar.</p>
+          <p className="text-center text-gray-500">No hay datos de estado de sensores para mostrar.</p>
         )}
       </div>
     </div>
