@@ -49,6 +49,17 @@ export class TelegramService {
 
   private formatAlertMessage(alertInfo: AlertInfo): string {
     const { alert, deviceInfo, parameter, value } = alertInfo;
+
+    const date = new Date(alert.createdAt);
+    const mexicoDateString = date.toLocaleString('es-MX', { 
+      timeZone: 'America/Mexico_City',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
+    });
     
     // Escape each part individually
     const formattedMessage = `🚨 *ALERTA EN SISTEMA AjoloApp*
@@ -66,7 +77,7 @@ Dispositivo: ${this.escapeMarkdown(deviceInfo.device.name)}
 Parámetro: ${this.escapeMarkdown(parameter.name)}
 Valor: ${this.escapeMarkdown(String(value))}
 
-⏰ Fecha: ${this.escapeMarkdown(new Date(alert.createdAt).toLocaleString('es-MX'))}
+⏰ Fecha: ${this.escapeMarkdown(mexicoDateString)}
 
 Por favor, revisa el sistema lo antes posible\\.`;
 
