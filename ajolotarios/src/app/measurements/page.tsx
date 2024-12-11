@@ -1312,7 +1312,7 @@ export default function MeasurementsPage() {
             <TableHead>Dispositivo</TableHead>
             <TableHead>Sensor</TableHead>
             <TableHead>Parámetros</TableHead>
-            <TableHead>Validez</TableHead>
+            {/* <TableHead>Validez</TableHead> */}
             <TableHead>Acciones</TableHead>
           </TableRow>
         </TableHeader>
@@ -1337,13 +1337,13 @@ export default function MeasurementsPage() {
                   <span>N/A</span>
                 )}
               </TableCell>
-              <TableCell>
+              {/* <TableCell>
                 {measurement.isValid ? (
                   <span className="text-green-500">Válida</span>
                 ) : (
                   <span className="text-red-500">Inválida</span>
                 )}
-              </TableCell>
+              </TableCell> */}
               <TableCell>
                 <div className="flex space-x-2">
                   {/* Botón para editar medición */}
