@@ -141,7 +141,7 @@ export default function AlertsPage() {
 
         const res = await fetch(url);
         if (!res.ok) {
-          throw new Error('Error al obtener las alertas');
+          throw new Error("Error al obtener las alertas");
         }
         const data = await res.json();
         setAlerts(data.data);
@@ -163,12 +163,12 @@ export default function AlertsPage() {
           throw new Error("Error al obtener las mediciones");
         }
         const data = await res.json();
-        setMeasurements(data.data); 
+        setMeasurements(data.data);
       } catch (error) {
         console.error(error);
       }
     };
-  
+
     // Obtener usuarios
     const fetchUsers = async () => {
       try {
@@ -177,12 +177,12 @@ export default function AlertsPage() {
           throw new Error("Error al obtener los usuarios");
         }
         const data = await res.json();
-        setUsers(data); 
+        setUsers(data);
       } catch (error) {
         console.error(error);
       }
     };
-  
+
     fetchMeasurements();
     fetchUsers();
   }, []);
@@ -249,7 +249,9 @@ export default function AlertsPage() {
         setEditingId(null);
         setIsDialogOpen(false);
         alert(
-          isEditing ? "Alerta actualizada exitosamente." : "Alerta agregada exitosamente."
+          isEditing
+            ? "Alerta actualizada exitosamente."
+            : "Alerta agregada exitosamente."
         );
         // Reset filters if needed
       } else {
@@ -364,16 +366,18 @@ export default function AlertsPage() {
 
   const formatDateTime = (dateTime: string) => {
     const date = new Date(dateTime);
-    return date.toLocaleString('es-ES', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
+    return date.toLocaleString("es-ES", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     });
   };
 
-  const handleFilterChange = (e: React.ChangeEvent<HTMLSelectElement | HTMLInputElement>) => {
+  const handleFilterChange = (
+    e: React.ChangeEvent<HTMLSelectElement | HTMLInputElement>
+  ) => {
     const { name, value } = e.target;
     setFilters((prev) => ({
       ...prev,
@@ -394,8 +398,12 @@ export default function AlertsPage() {
     <div className="container mx-auto py-10">
       <Card className="mb-8">
         <CardHeader>
-          <CardTitle className="text-3xl font-bold">Gestión de Alertas</CardTitle>
-          <CardDescription>Monitorea y administra las alertas del sistema</CardDescription>
+          <CardTitle className="text-3xl font-bold">
+            Gestión de Alertas
+          </CardTitle>
+          <CardDescription>
+            Monitorea y administra las alertas del sistema
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -463,9 +471,7 @@ export default function AlertsPage() {
               <SelectItem value="CALIBRATION_NEEDED">
                 Necesita calibración
               </SelectItem>
-              <SelectItem value="HEALTH_ISSUE">
-                Problema de salud
-              </SelectItem>
+              <SelectItem value="HEALTH_ISSUE">Problema de salud</SelectItem>
             </SelectContent>
           </Select>
 
@@ -531,8 +537,14 @@ export default function AlertsPage() {
             <SelectContent>
               <SelectItem value="ALL">Todas las Mediciones</SelectItem>
               {measurements.map((measurement) => (
-                <SelectItem key={measurement.id} value={measurement.id.toString()}>
-                  Medición {measurement.id} - Dispositivo: {measurement.device?.name || 'N/A'}, Sensor: {measurement.sensor?.type?.name || 'N/A'}, Fecha: {formatDateTime(measurement.dateTime)}
+                <SelectItem
+                  key={measurement.id}
+                  value={measurement.id.toString()}
+                >
+                  Medición {measurement.id} - Dispositivo:{" "}
+                  {measurement.device?.name || "N/A"}, Sensor:{" "}
+                  {measurement.sensor?.type?.name || "N/A"}, Fecha:{" "}
+                  {formatDateTime(measurement.dateTime)}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -564,6 +576,38 @@ export default function AlertsPage() {
 
           <Button onClick={openAddDialog}>
             <Plus className="mr-2 h-4 w-4" /> Agregar Alerta
+          </Button>
+          <Button
+            variant="destructive"
+            onClick={async () => {
+              if (
+                confirm(
+                  "¿Estás seguro de que deseas eliminar TODAS las alertas? Esta acción no se puede deshacer."
+                )
+              ) {
+                try {
+                  const res = await fetch("/api/alerts", {
+                    method: "DELETE",
+                  });
+                  if (res.ok) {
+                    alert(
+                      "Todas las alertas han sido eliminadas exitosamente."
+                    );
+                    setAlerts([]); // limpiar el estado local
+                  } else {
+                    const errorMessage = await res.text();
+                    alert(`Error: ${errorMessage}`);
+                  }
+                } catch (error) {
+                  console.error(error);
+                  alert(
+                    "Ocurrió un error inesperado al eliminar todas las alertas."
+                  );
+                }
+              }
+            }}
+          >
+            Borrar Todas las Alertas
           </Button>
         </div>
       </div>
@@ -707,7 +751,10 @@ export default function AlertsPage() {
                         key={measurement.id}
                         value={measurement.id.toString()}
                       >
-                        Medición {measurement.id} - Dispositivo: {measurement.device?.name || 'N/A'}, Sensor: {measurement.sensor?.type?.name || 'N/A'}, Fecha: {formatDateTime(measurement.dateTime)}
+                        Medición {measurement.id} - Dispositivo:{" "}
+                        {measurement.device?.name || "N/A"}, Sensor:{" "}
+                        {measurement.sensor?.type?.name || "N/A"}, Fecha:{" "}
+                        {formatDateTime(measurement.dateTime)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -772,10 +819,7 @@ export default function AlertsPage() {
                       <SelectContent>
                         <SelectItem value="ALL">Todos los Usuarios</SelectItem>
                         {users.map((user) => (
-                          <SelectItem
-                            key={user.id}
-                            value={user.id.toString()}
-                          >
+                          <SelectItem key={user.id} value={user.id.toString()}>
                             {user.firstName} {user.lastName}
                           </SelectItem>
                         ))}
@@ -828,23 +872,23 @@ export default function AlertsPage() {
               <TableCell className="font-medium">{alert.description}</TableCell>
               <TableCell>
                 <Badge
-                  className={`${getPriorityColor(
-                    alert.priority
-                  )} text-white`}
+                  className={`${getPriorityColor(alert.priority)} text-white`}
                 >
                   {alert.priority}
                 </Badge>
               </TableCell>
               <TableCell>
-                <Badge
-                  className={`${getStatusColor(alert.status)} text-white`}
-                >
+                <Badge className={`${getStatusColor(alert.status)} text-white`}>
                   {alert.status}
                 </Badge>
               </TableCell>
               <TableCell>
                 {alert.measurement
-                  ? `Medición ${alert.measurement.id} - Dispositivo: ${alert.measurement.device?.name || 'N/A'}, Sensor: ${alert.measurement.sensor?.type?.name || 'N/A'}, Fecha: ${formatDateTime(alert.measurement.dateTime)}`
+                  ? `Medición ${alert.measurement.id} - Dispositivo: ${
+                      alert.measurement.device?.name || "N/A"
+                    }, Sensor: ${
+                      alert.measurement.sensor?.type?.name || "N/A"
+                    }, Fecha: ${formatDateTime(alert.measurement.dateTime)}`
                   : "N/A"}
               </TableCell>
               <TableCell>

@@ -181,3 +181,27 @@ export async function POST(request: Request) {
     return new NextResponse('Error al crear la alerta', { status: 500 });
   }
 }
+
+export async function DELETE(request: Request) {
+  const session = await getServerSession(authOptions);
+  const userId = session?.user?.id;
+
+  try {
+    // Elimina todas las alertas
+    await db.alert.deleteMany({});
+
+    // Registrar el log de eliminación masiva
+    await createLog(
+      ActionType.DELETE,
+      'Alert',
+      undefined, // no hay un ID específico, pero se puede dejar vacío
+      userId,
+      `Eliminación de todas las alertas`
+    );
+
+    return new NextResponse('Todas las alertas han sido eliminadas', { status: 200 });
+  } catch (error) {
+    console.error(error);
+    return new NextResponse('Error al eliminar todas las alertas', { status: 500 });
+  }
+}
