@@ -84,6 +84,10 @@ export async function POST(request: Request) {
           throw new Error(`Parámetro no encontrado: ${m.parameterName}`);
         }
 
+        // Convert value to string and remove negative sign if present
+        const valueStr = String(m.value);
+        const absoluteValue = valueStr.startsWith('-') ? Number(valueStr.substring(1)) : Number(valueStr);
+
         return db.measurement.create({
           data: {
             deviceId: device.id,
@@ -94,7 +98,7 @@ export async function POST(request: Request) {
               create: [
                 {
                   parameterId: parameter.id,
-                  value: m.value,
+                  value: absoluteValue,
                 },
               ],
             },
