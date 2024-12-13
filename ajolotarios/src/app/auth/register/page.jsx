@@ -12,8 +12,22 @@ function RegisterPage() {
 
   const router = useRouter();
   const onSubmit = handleSubmit(async (data) => {
+    // Eliminar espacios en blanco
+    const password = data.password.trim();
+    const confirmPassword = data.confirmPassword.trim();
+
+    if (password.length < 8) {
+      alert("La contraseña debe tener al menos 8 caracteres");
+      return;
+    }
+
     if (data.password !== data.confirmPassword) {
       alert("Las contraseñas no coinciden");
+      return;
+    }
+
+    if (!data.privacyAccepted) {
+      alert("Debes aceptar el aviso de privacidad");
       return;
     }
 
@@ -199,6 +213,39 @@ function RegisterPage() {
             {errors.confirmPassword && (
               <span className="text-red-500 text-sm">
                 {errors.confirmPassword.message}
+              </span>
+            )}
+          </div>
+
+          {/* Aviso de privacidad */}
+          <div className="mb-6">
+            <div className="flex items-start">
+              <div className="flex items-center h-5">
+                <input
+                  id="privacy"
+                  type="checkbox"
+                  className="w-4 h-4 border border-gray-300 rounded bg-gray-50 focus:ring-3 focus:ring-blue-300"
+                  {...register("privacyAccepted", {
+                    required: {
+                      value: true,
+                      message: "Debes aceptar el aviso de privacidad para continuar"
+                    }
+                  })}
+                />
+              </div>
+              <label htmlFor="privacy" className="ml-2 text-sm text-gray-600">
+                He leído y acepto el <button 
+                  type="button"
+                  onClick={() => alert("Aviso de Privacidad\n\nDe conformidad con lo establecido en la Ley Federal de Protección de Datos Personales en Posesión de los Particulares, nos comprometemos a proteger tus datos personales. Los datos que proporcionas (nombre, correo electrónico, teléfono) serán utilizados únicamente para los fines relacionados con nuestros servicios. No compartiremos tu información con terceros sin tu consentimiento expreso.")}
+                  className="text-blue-600 hover:underline"
+                >
+                  aviso de privacidad
+                </button>
+              </label>
+            </div>
+            {errors.privacyAccepted && (
+              <span className="text-red-500 text-sm block mt-1">
+                {errors.privacyAccepted.message}
               </span>
             )}
           </div>
