@@ -12,19 +12,34 @@ import { Measurement, Alert } from '@/types/types';
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#AA336A'];
 
-interface DashboardChartsProps {
-  measurements: Measurement[];
-  alerts: Alert[];
-}
+// Utility function to format dates based on range
+const getDateFormat = (startDate: Date | null, endDate: Date | null) => {
+  if (!startDate || !endDate) return 'dd/MM HH:mm';
+  
+  const diffDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 3600 * 24));
+  
+  if (diffDays > 30) return 'MM/yyyy';
+  if (diffDays > 7) return 'dd/MM';
+  return 'dd/MM HH:mm';
+};
 
-const DashboardCharts: React.FC<DashboardChartsProps> = ({ 
+const formatDate = (date: Date, format: string) => {
+  return new Date(date).toLocaleString('es-MX', {
+    day: format.includes('dd') ? '2-digit' : undefined,
+    month: format.includes('MM') ? '2-digit' : undefined,
+    year: format.includes('yyyy') ? 'numeric' : undefined,
+    hour: format.includes('HH') ? '2-digit' : undefined,
+    minute: format.includes('mm') ? '2-digit' : undefined,
+  });
+};
+
+const DashboardCharts: React.FC<{ measurements: Measurement[]; alerts: Alert[] }> = ({ 
   measurements = [], 
   alerts = []
 }) => {
   const [selectedParameters, setSelectedParameters] = useState<string[]>([]);
   const [dateRange, setDateRange] = useState<[Date | null, Date | null]>([null, null]);
 
-  // Opciones de parámetros disponibles
   const parameterOptions = useMemo(() => {
     const uniqueParams = new Set<string>();
     measurements.forEach(m => {
@@ -38,13 +53,11 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({
       }));
   }, [measurements]);
 
-  // Procesamiento de datos para gráficas
   const processedData = useMemo(() => {
     if (!measurements.length) return [];
 
     let filtered = measurements;
 
-    // Filtro por fechas
     if (dateRange[0] && dateRange[1]) {
       const startDate = new Date(dateRange[0]).setHours(0, 0, 0, 0);
       const endDate = new Date(dateRange[1]).setHours(23, 59, 59, 999);
@@ -55,28 +68,18 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({
       });
     }
 
-    // Formateo de datos para el gráfico
-    return filtered.map(m => {
-      const baseData: { date: string; [key: string]: string | number } = {
-        date: new Date(m.dateTime).toLocaleString('es-MX', {
-          day: '2-digit',
-          month: '2-digit',
-          hour: '2-digit',
-          minute: '2-digit'
-        })
-      };
+    const dateFormat = getDateFormat(dateRange[0], dateRange[1]);
 
-      m.parameters.forEach(p => {
-        if (!selectedParameters.length || selectedParameters.includes(p.parameter.name)) {
-          baseData[p.parameter.name] = Number(p.value);
-        }
-      });
+    return filtered.map(m => ({
+      date: formatDate(new Date(m.dateTime), dateFormat),
+      timestamp: new Date(m.dateTime).getTime(),
+      ...m.parameters.reduce((acc, p) => ({
+        ...acc,
+        [p.parameter.name]: Number(p.value)
+      }), {})
+    })).sort((a, b) => a.timestamp - b.timestamp);
+  }, [measurements, dateRange]);
 
-      return baseData;
-    }).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-  }, [measurements, selectedParameters, dateRange]);
-
-  // Estadísticas de alertas
   const alertStats = useMemo(() => {
     const stats = alerts.reduce((acc, curr) => {
       acc[curr.alertType] = (acc[curr.alertType] || 0) + 1;
@@ -126,27 +129,24 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({
                     angle={-45}
                     textAnchor="end"
                     height={70}
+                    interval="preserveStartEnd"
                   />
                   <YAxis />
-                  <Tooltip />
+                  <Tooltip
+                    labelFormatter={(label) => `Fecha: ${label}`}
+                    formatter={(value) => [`${value}`, '']}
+                  />
                   <Legend />
-                  {selectedParameters.length > 0 ? 
-                    selectedParameters.map((param, idx) => (
+                  {(selectedParameters.length > 0 ? selectedParameters : parameterOptions.map(p => p.value))
+                    .map((param, idx) => (
                       <Line
                         key={param}
                         type="monotone"
                         dataKey={param}
                         stroke={COLORS[idx % COLORS.length]}
+                        strokeWidth={2}
                         dot={false}
-                      />
-                    )) :
-                    parameterOptions.map((param, idx) => (
-                      <Line
-                        key={param.value}
-                        type="monotone"
-                        dataKey={param.value}
-                        stroke={COLORS[idx % COLORS.length]}
-                        dot={false}
+                        connectNulls
                       />
                     ))
                   }
