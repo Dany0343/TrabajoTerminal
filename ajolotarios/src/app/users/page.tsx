@@ -17,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { toast } from "@/components/ui/use-toast";
+import { useToast } from "@/components/ui/use-toast"; // Fixed import
 
 interface User {
   id: number;
@@ -28,29 +28,30 @@ interface User {
 }
 
 export default function UsersPage() {
-  const [users, setUsers] = useState<User[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetchUsers();
-  }, []);
-
-  const fetchUsers = async () => {
-    try {
-      const response = await fetch("/api/users");
-      if (!response.ok) throw new Error("Error fetching users");
-      const data = await response.json();
-      setUsers(data);
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "No se pudieron cargar los usuarios",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+    const [users, setUsers] = useState<User[]>([]);
+    const [loading, setLoading] = useState(true);
+    const { toast } = useToast(); // Using useToast hook
+  
+    useEffect(() => {
+      fetchUsers();
+    }, []);
+  
+    const fetchUsers = async () => {
+      try {
+        const response = await fetch("/api/users");
+        if (!response.ok) throw new Error("Error fetching users");
+        const data = await response.json();
+        setUsers(data);
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: "No se pudieron cargar los usuarios",
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
 
   const updateUserRole = async (userId: number, newRole: string) => {
     try {
