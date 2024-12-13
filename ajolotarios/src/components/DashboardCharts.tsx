@@ -8,34 +8,23 @@ import {
 import Select from 'react-select';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
-import { Measurement, Alert, Sensor } from '@/types/types';
+import { Measurement, Alert } from '@/types/types';
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#AA336A'];
 
 interface DashboardChartsProps {
   measurements: Measurement[];
   alerts: Alert[];
-  sensors: Sensor[];
 }
 
 const DashboardCharts: React.FC<DashboardChartsProps> = ({ 
   measurements = [], 
-  alerts = [], 
-  sensors = [] 
+  alerts = []
 }) => {
-  const [selectedSensorIds, setSelectedSensorIds] = useState<number[]>([]);
   const [selectedParameters, setSelectedParameters] = useState<string[]>([]);
   const [dateRange, setDateRange] = useState<[Date | null, Date | null]>([null, null]);
 
-  // Opciones de sensores mejoradas
-  const sensorOptions = useMemo(() => 
-    sensors.map(sensor => ({
-      value: sensor.id,
-      label: `${sensor.model} (${sensor.serialNumber})`
-    })).sort((a, b) => a.label.localeCompare(b.label))
-  , [sensors]);
-
-  // Opciones de parámetros mejoradas
+  // Opciones de parámetros disponibles
   const parameterOptions = useMemo(() => {
     const uniqueParams = new Set<string>();
     measurements.forEach(m => {
@@ -49,21 +38,16 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({
       }));
   }, [measurements]);
 
-  // Procesamiento de datos mejorado
+  // Procesamiento de datos para gráficas
   const processedData = useMemo(() => {
     if (!measurements.length) return [];
 
     let filtered = measurements;
 
-    // Filtro por sensores
-    if (selectedSensorIds.length) {
-      filtered = filtered.filter(m => selectedSensorIds.includes(m.sensorId));
-    }
-
-    // Filtro por fechas mejorado
+    // Filtro por fechas
     if (dateRange[0] && dateRange[1]) {
-      const startDate = dateRange[0].setHours(0, 0, 0, 0);
-      const endDate = dateRange[1].setHours(23, 59, 59, 999);
+      const startDate = new Date(dateRange[0]).setHours(0, 0, 0, 0);
+      const endDate = new Date(dateRange[1]).setHours(23, 59, 59, 999);
       
       filtered = filtered.filter(m => {
         const measurementDate = new Date(m.dateTime).getTime();
@@ -72,7 +56,7 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({
     }
 
     // Formateo de datos para el gráfico
-    const formattedData = filtered.map(m => {
+    return filtered.map(m => {
       const baseData: { date: string; [key: string]: string | number } = {
         date: new Date(m.dateTime).toLocaleString('es-MX', {
           day: '2-digit',
@@ -82,7 +66,6 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({
         })
       };
 
-      // Agregar solo los parámetros seleccionados
       m.parameters.forEach(p => {
         if (!selectedParameters.length || selectedParameters.includes(p.parameter.name)) {
           baseData[p.parameter.name] = Number(p.value);
@@ -90,15 +73,10 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({
       });
 
       return baseData;
-    });
+    }).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  }, [measurements, selectedParameters, dateRange]);
 
-    // Ordenar por fecha
-    return formattedData.sort((a, b) => 
-      new Date(a.date).getTime() - new Date(b.date).getTime()
-    );
-  }, [measurements, selectedSensorIds, selectedParameters, dateRange]);
-
-  // Estadísticas de alertas mejoradas
+  // Estadísticas de alertas
   const alertStats = useMemo(() => {
     const stats = alerts.reduce((acc, curr) => {
       acc[curr.alertType] = (acc[curr.alertType] || 0) + 1;
@@ -113,15 +91,6 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({
   return (
     <div className="space-y-8">
       <div className="flex flex-col md:flex-row gap-4">
-        <div className="flex-1">
-          <Select
-            isMulti
-            options={sensorOptions}
-            onChange={(selected) => setSelectedSensorIds(selected?.map(s => Number(s.value)) || [])}
-            placeholder="Seleccionar sensores..."
-            className="w-full"
-          />
-        </div>
         <div className="flex-1">
           <Select
             isMulti
@@ -144,9 +113,7 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({
         </div>
       </div>
 
-      {/* Gráficos */}
       <div className="grid gap-8 grid-cols-1 lg:grid-cols-2">
-        {/* Gráfico de línea */}
         <div className="bg-white p-4 rounded-lg shadow">
           <h3 className="text-lg font-semibold mb-4">Mediciones en el Tiempo</h3>
           <div className="h-[300px]">
@@ -163,26 +130,36 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({
                   <YAxis />
                   <Tooltip />
                   <Legend />
-                  {selectedParameters.map((param, idx) => (
-                    <Line
-                      key={param}
-                      type="monotone"
-                      dataKey={param}
-                      stroke={COLORS[idx % COLORS.length]}
-                      dot={false}
-                    />
-                  ))}
+                  {selectedParameters.length > 0 ? 
+                    selectedParameters.map((param, idx) => (
+                      <Line
+                        key={param}
+                        type="monotone"
+                        dataKey={param}
+                        stroke={COLORS[idx % COLORS.length]}
+                        dot={false}
+                      />
+                    )) :
+                    parameterOptions.map((param, idx) => (
+                      <Line
+                        key={param.value}
+                        type="monotone"
+                        dataKey={param.value}
+                        stroke={COLORS[idx % COLORS.length]}
+                        dot={false}
+                      />
+                    ))
+                  }
                 </LineChart>
               </ResponsiveContainer>
             ) : (
               <div className="h-full flex items-center justify-center text-gray-500">
-                No hay datos para mostrar con los filtros seleccionados
+                No hay datos para mostrar en el rango seleccionado
               </div>
             )}
           </div>
         </div>
 
-        {/* Gráfico de barras */}
         <div className="bg-white p-4 rounded-lg shadow">
           <h3 className="text-lg font-semibold mb-4">Distribución de Alertas</h3>
           <div className="h-[300px]">
