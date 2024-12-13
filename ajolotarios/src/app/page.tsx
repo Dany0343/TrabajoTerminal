@@ -216,7 +216,6 @@ export default function Dashboard() {
             <DashboardCharts
               measurements={filteredMeasurements}
               alerts={alerts}
-              sensors={sensors}
             />
           </div>
         </div>
