@@ -6,8 +6,8 @@ import { useState } from "react";
 import Image from "next/image";
 import { toast } from "react-hot-toast";
 import { AiOutlineEye, AiOutlineEyeInvisible } from "react-icons/ai";
-import { loadFull } from "tsparticles";
 import { useCallback } from "react";
+import { loadFull } from "@tsparticles/engine";
 import Particles from "react-tsparticles";
 
 // Configuración de partículas 
