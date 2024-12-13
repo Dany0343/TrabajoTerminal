@@ -108,8 +108,7 @@ const DashboardCharts: React.FC<{
     // Limitamos el número de puntos
     const totalPoints = filtered.length;
     const maxPoints = 10;
-    // const interval = Math.ceil(totalPoints / maxPoints);
-    const interval = 1;
+    const interval = Math.ceil(totalPoints / maxPoints);
   
     return filtered.map((m, index) => {
       const date = new Date(m.dateTime);
