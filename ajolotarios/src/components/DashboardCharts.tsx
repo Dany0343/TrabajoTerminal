@@ -1,55 +1,70 @@
-'use client';
+"use client";
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState } from "react";
 import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, 
-  Legend, ResponsiveContainer, BarChart, Bar
-} from 'recharts';
-import Select from 'react-select';
-import DatePicker from 'react-datepicker';
-import 'react-datepicker/dist/react-datepicker.css';
-import { Measurement, Alert } from '@/types/types';
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+} from "recharts";
+import Select from "react-select";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
+import { Measurement, Alert } from "@/types/types";
 
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#AA336A'];
+const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#AA336A"];
 
 // Utility function to format dates based on range
 const getDateFormat = (startDate: Date | null, endDate: Date | null) => {
-  if (!startDate || !endDate) return 'dd/MM HH:mm';
-  
-  const diffDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 3600 * 24));
-  
-  if (diffDays > 30) return 'MM/yyyy';
-  if (diffDays > 7) return 'dd/MM';
-  return 'dd/MM HH:mm';
+  if (!startDate || !endDate) return "HH:mm";
+
+  const diffDays = Math.ceil(
+    (endDate.getTime() - startDate.getTime()) / (1000 * 3600 * 24)
+  );
+
+  if (diffDays > 90) return "MM/yyyy";
+  if (diffDays > 30) return "dd/MM/yyyy";
+  if (diffDays > 7) return "dd/MM";
+  if (diffDays > 1) return "dd/MM HH:mm";
+  return "HH:mm";
 };
 
 const formatDate = (date: Date, format: string) => {
-  return new Date(date).toLocaleString('es-MX', {
-    day: format.includes('dd') ? '2-digit' : undefined,
-    month: format.includes('MM') ? '2-digit' : undefined,
-    year: format.includes('yyyy') ? 'numeric' : undefined,
-    hour: format.includes('HH') ? '2-digit' : undefined,
-    minute: format.includes('mm') ? '2-digit' : undefined,
+  return new Date(date).toLocaleString("es-MX", {
+    day: format.includes("dd") ? "2-digit" : undefined,
+    month: format.includes("MM") ? "2-digit" : undefined,
+    year: format.includes("yyyy") ? "numeric" : undefined,
+    hour: format.includes("HH") ? "2-digit" : undefined,
+    minute: format.includes("mm") ? "2-digit" : undefined,
   });
 };
 
-const DashboardCharts: React.FC<{ measurements: Measurement[]; alerts: Alert[] }> = ({ 
-  measurements = [], 
-  alerts = []
-}) => {
+const DashboardCharts: React.FC<{
+  measurements: Measurement[];
+  alerts: Alert[];
+}> = ({ measurements = [], alerts = [] }) => {
   const [selectedParameters, setSelectedParameters] = useState<string[]>([]);
-  const [dateRange, setDateRange] = useState<[Date | null, Date | null]>([null, null]);
+  const [dateRange, setDateRange] = useState<[Date | null, Date | null]>([
+    null,
+    null,
+  ]);
 
   const parameterOptions = useMemo(() => {
     const uniqueParams = new Set<string>();
-    measurements.forEach(m => {
-      m.parameters.forEach(p => uniqueParams.add(p.parameter.name));
+    measurements.forEach((m) => {
+      m.parameters.forEach((p) => uniqueParams.add(p.parameter.name));
     });
     return Array.from(uniqueParams)
       .sort()
-      .map(param => ({
+      .map((param) => ({
         value: param,
-        label: param
+        label: param,
       }));
   }, [measurements]);
 
@@ -61,23 +76,41 @@ const DashboardCharts: React.FC<{ measurements: Measurement[]; alerts: Alert[] }
     if (dateRange[0] && dateRange[1]) {
       const startDate = new Date(dateRange[0]).setHours(0, 0, 0, 0);
       const endDate = new Date(dateRange[1]).setHours(23, 59, 59, 999);
-      
-      filtered = filtered.filter(m => {
+
+      filtered = filtered.filter((m) => {
         const measurementDate = new Date(m.dateTime).getTime();
         return measurementDate >= startDate && measurementDate <= endDate;
       });
     }
 
-    const dateFormat = getDateFormat(dateRange[0], dateRange[1]);
+    // Sort first by timestamp
+    filtered.sort(
+      (a, b) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime()
+    );
 
-    return filtered.map(m => ({
-      date: formatDate(new Date(m.dateTime), dateFormat),
-      timestamp: new Date(m.dateTime).getTime(),
-      ...m.parameters.reduce((acc, p) => ({
-        ...acc,
-        [p.parameter.name]: Number(p.value)
-      }), {})
-    })).sort((a, b) => a.timestamp - b.timestamp);
+    // Calculate ideal number of data points to show
+    const totalPoints = filtered.length;
+    const maxPoints = 10; // Maximum number of points to show in X axis
+    const interval = Math.ceil(totalPoints / maxPoints);
+
+    return filtered.map((m, index) => {
+      const date = new Date(m.dateTime);
+      const format = getDateFormat(dateRange[0], dateRange[1]);
+
+      return {
+        date: formatDate(date, format),
+        fullDate: date, // Keep full date for tooltip
+        timestamp: date.getTime(),
+        showLabel: index % interval === 0, // Use for interval calculation
+        ...m.parameters.reduce(
+          (acc, p) => ({
+            ...acc,
+            [p.parameter.name]: Number(p.value),
+          }),
+          {}
+        ),
+      };
+    });
   }, [measurements, dateRange]);
 
   const alertStats = useMemo(() => {
@@ -85,7 +118,7 @@ const DashboardCharts: React.FC<{ measurements: Measurement[]; alerts: Alert[] }
       acc[curr.alertType] = (acc[curr.alertType] || 0) + 1;
       return acc;
     }, {} as Record<string, number>);
-    
+
     return Object.entries(stats)
       .map(([name, value]) => ({ name, value }))
       .sort((a, b) => b.value - a.value);
@@ -98,7 +131,9 @@ const DashboardCharts: React.FC<{ measurements: Measurement[]; alerts: Alert[] }
           <Select
             isMulti
             options={parameterOptions}
-            onChange={(selected) => setSelectedParameters(selected?.map(s => String(s.value)) || [])}
+            onChange={(selected) =>
+              setSelectedParameters(selected?.map((s) => String(s.value)) || [])
+            }
             placeholder="Seleccionar parámetros..."
             className="w-full"
           />
@@ -118,38 +153,52 @@ const DashboardCharts: React.FC<{ measurements: Measurement[]; alerts: Alert[] }
 
       <div className="grid gap-8 grid-cols-1 lg:grid-cols-2">
         <div className="bg-white p-4 rounded-lg shadow">
-          <h3 className="text-lg font-semibold mb-4">Mediciones en el Tiempo</h3>
+          <h3 className="text-lg font-semibold mb-4">
+            Mediciones en el Tiempo
+          </h3>
           <div className="h-[300px]">
             {processedData.length > 0 ? (
               <ResponsiveContainer>
                 <LineChart data={processedData}>
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis 
+                  <XAxis
                     dataKey="date"
                     angle={-45}
                     textAnchor="end"
                     height={70}
-                    interval="preserveStartEnd"
+                    interval={
+                      dateRange[0] && dateRange[1] ? "preserveStartEnd" : 0
+                    }
+                    tickFormatter={(value) => {
+                      const item = processedData.find((d) => d.date === value);
+                      return item?.showLabel ? value : "";
+                    }}
                   />
                   <YAxis />
                   <Tooltip
-                    labelFormatter={(label) => `Fecha: ${label}`}
-                    formatter={(value) => [`${value}`, '']}
+                    labelFormatter={(label) => {
+                      const item = processedData.find((d) => d.date === label);
+                      return item
+                        ? `Fecha: ${item.fullDate.toLocaleString("es-MX")}`
+                        : label;
+                    }}
+                    formatter={(value) => [`${value}`, ""]}
                   />
                   <Legend />
-                  {(selectedParameters.length > 0 ? selectedParameters : parameterOptions.map(p => p.value))
-                    .map((param, idx) => (
-                      <Line
-                        key={param}
-                        type="monotone"
-                        dataKey={param}
-                        stroke={COLORS[idx % COLORS.length]}
-                        strokeWidth={2}
-                        dot={false}
-                        connectNulls
-                      />
-                    ))
-                  }
+                  {(selectedParameters.length > 0
+                    ? selectedParameters
+                    : parameterOptions.map((p) => p.value)
+                  ).map((param, idx) => (
+                    <Line
+                      key={param}
+                      type="monotone"
+                      dataKey={param}
+                      stroke={COLORS[idx % COLORS.length]}
+                      strokeWidth={2}
+                      dot={false}
+                      connectNulls
+                    />
+                  ))}
                 </LineChart>
               </ResponsiveContainer>
             ) : (
@@ -161,7 +210,9 @@ const DashboardCharts: React.FC<{ measurements: Measurement[]; alerts: Alert[] }
         </div>
 
         <div className="bg-white p-4 rounded-lg shadow">
-          <h3 className="text-lg font-semibold mb-4">Distribución de Alertas</h3>
+          <h3 className="text-lg font-semibold mb-4">
+            Distribución de Alertas
+          </h3>
           <div className="h-[300px]">
             {alertStats.length > 0 ? (
               <ResponsiveContainer>
