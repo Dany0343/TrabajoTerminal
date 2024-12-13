@@ -10,7 +10,7 @@ import { loadFull } from "tsparticles";
 import { useCallback } from "react";
 import Particles from "react-tsparticles";
 
-// Configuración de partículas (puedes personalizar al gusto)
+// Configuración de partículas 
 const particlesConfig = {
   fullScreen: { enable: true },
   particles: {
