@@ -58,8 +58,12 @@ const DashboardCharts: React.FC<{
 
   const parameterOptions = useMemo(() => {
     const uniqueParams = new Set<string>();
-    measurements.forEach((m) => {
-      m.parameters.forEach((p) => uniqueParams.add(p.parameter.name));
+    measurements.forEach(m => {
+      const d = new Date(m.dateTime);
+      if (isNaN(d.getTime())) {
+        console.error("Fecha inválida:", m.dateTime);
+      }
+      m.parameters.forEach(p => uniqueParams.add(p.parameter.name));
     });
     return Array.from(uniqueParams)
       .sort()
@@ -71,13 +75,17 @@ const DashboardCharts: React.FC<{
 
   const processedData = useMemo(() => {
     if (!measurements.length) return [];
-
+  
     let filtered = measurements;
-
-    if (dateRange[0] && dateRange[1]) {
-      const startDate = new Date(dateRange[0].getTime());
+  
+    // Ahora permitimos filtrar también con una sola fecha
+    const start = dateRange[0];
+    const end = dateRange[1] ?? dateRange[0];
+  
+    if (start && end) {
+      const startDate = new Date(start.getTime());
       startDate.setHours(0, 0, 0, 0);
-      const endDate = new Date(dateRange[1].getTime());
+      const endDate = new Date(end.getTime());
       endDate.setHours(23, 59, 59, 999);
   
       filtered = filtered.filter((m) => {
@@ -88,26 +96,27 @@ const DashboardCharts: React.FC<{
         );
       });
     }
-
-    // Sort first by timestamp
+  
+    // Ordenamos las mediciones por fecha
     filtered.sort(
       (a, b) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime()
     );
-
-    // Calculate ideal number of data points to show
+  
+    // Calculamos el formato basado en el rango seleccionado
+    const format = getDateFormat(dateRange[0], dateRange[1]);
+  
+    // Limitamos el número de puntos
     const totalPoints = filtered.length;
-    const maxPoints = 10; // Maximum number of points to show in X axis
+    const maxPoints = 10;
     const interval = Math.ceil(totalPoints / maxPoints);
-
+  
     return filtered.map((m, index) => {
       const date = new Date(m.dateTime);
-      const format = getDateFormat(dateRange[0], dateRange[1]);
-
       return {
         date: formatDate(date, format),
-        fullDate: date, // Keep full date for tooltip
+        fullDate: date,
         timestamp: date.getTime(),
-        showLabel: index % interval === 0, // Use for interval calculation
+        showLabel: index % interval === 0,
         ...m.parameters.reduce(
           (acc, p) => ({
             ...acc,
@@ -150,17 +159,18 @@ const DashboardCharts: React.FC<{
           />
         </div>
         <div className="flex-1">
-        <DatePicker
-  selectsRange
-  startDate={dateRange[0] ?? undefined}
-  endDate={dateRange[1] ?? undefined}
-  onChange={(update: [Date | null, Date | null] | null) => 
-    setDateRange(update ?? [null, null])
-  }
-  className="w-full p-2 border rounded"
-  placeholderText="Seleccionar fechas..."
-  dateFormat="dd/MM/yyyy"
-/>
+          <DatePicker
+            selectsRange
+            startDate={dateRange[0] ?? undefined}
+            endDate={dateRange[1] ?? undefined}
+            onChange={(dates: [Date | null, Date | null]) => {
+              const [start, end] = dates;
+              setDateRange([start, end]);
+            }}
+            className="w-full p-2 border rounded"
+            placeholderText="Seleccionar rango de fechas..."
+            dateFormat="dd/MM/yyyy"
+          />
         </div>
       </div>
 
