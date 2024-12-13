@@ -202,7 +202,7 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({
         </div>
 
         {/* Sensor Status Chart */}
-        <div className="bg-white p-4 rounded-lg shadow lg:col-span-2">
+        {/* <div className="bg-white p-4 rounded-lg shadow lg:col-span-2">
           <h3 className="text-lg font-semibold mb-4">Estado de Sensores</h3>
           <div className="h-[300px]">
             {sensorStats.some(stat => stat.value > 0) ? (
@@ -231,7 +231,7 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({
               </div>
             )}
           </div>
-        </div>
+        </div> */}
       </div>
     </div>
   );

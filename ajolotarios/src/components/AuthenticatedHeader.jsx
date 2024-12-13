@@ -59,6 +59,9 @@ const AuthenticatedHeader = () => {
             <Link href="/sensors" className="transition-colors hover:text-foreground/80 text-foreground/60 font-semibold">
               Sensores
             </Link>
+            <Link href="/users" className="transition-colors hover:text-foreground/80 text-foreground/60 font-semibold">
+              Usuarios
+            </Link>
           </nav>
         </div>
 
