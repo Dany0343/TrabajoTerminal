@@ -162,27 +162,27 @@ const DashboardCharts: React.FC<{
                 <LineChart data={processedData}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis
-                    dataKey="date"
-                    angle={-45}
-                    textAnchor="end"
-                    height={70}
-                    interval={
-                      dateRange[0] && dateRange[1] ? "preserveStartEnd" : 0
-                    }
-                    tickFormatter={(value) => {
-                      const item = processedData.find((d) => d.date === value);
-                      return item?.showLabel ? value : "";
+                    dataKey="timestamp"
+                    type="number"
+                    domain={["dataMin", "dataMax"]}
+                    scale="time"
+                    tickFormatter={(unixTime) => {
+                      const date = new Date(unixTime);
+                      return formatDate(
+                        date,
+                        getDateFormat(dateRange[0], dateRange[1])
+                      );
                     }}
                   />
                   <YAxis />
                   <Tooltip
                     labelFormatter={(label) => {
-                      const item = processedData.find((d) => d.date === label);
-                      return item
-                        ? `Fecha: ${item.fullDate.toLocaleString("es-MX")}`
-                        : label;
+                      const date = new Date(label);
+                      return `Fecha: ${formatDate(
+                        date,
+                        getDateFormat(dateRange[0], dateRange[1])
+                      )}`;
                     }}
-                    formatter={(value) => [`${value}`, ""]}
                   />
                   <Legend />
                   {(selectedParameters.length > 0
