@@ -5,7 +5,7 @@ import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useState, useCallback } from "react";
 import Image from "next/image";
-import { loadFull } from "tsparticles";
+import { loadFull } from "@tsparticles/engine";
 import Particles from "react-tsparticles";
 
 function LoginPage() {
