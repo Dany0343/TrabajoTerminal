@@ -75,12 +75,17 @@ const DashboardCharts: React.FC<{
     let filtered = measurements;
 
     if (dateRange[0] && dateRange[1]) {
-      const startDate = new Date(dateRange[0]).setHours(0, 0, 0, 0);
-      const endDate = new Date(dateRange[1]).setHours(23, 59, 59, 999);
-
+      const startDate = new Date(dateRange[0].getTime());
+      startDate.setHours(0, 0, 0, 0);
+      const endDate = new Date(dateRange[1].getTime());
+      endDate.setHours(23, 59, 59, 999);
+  
       filtered = filtered.filter((m) => {
         const measurementDate = new Date(m.dateTime).getTime();
-        return measurementDate >= startDate && measurementDate <= endDate;
+        return (
+          measurementDate >= startDate.getTime() &&
+          measurementDate <= endDate.getTime()
+        );
       });
     }
 
