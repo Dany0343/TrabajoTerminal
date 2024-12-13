@@ -1,56 +1,12 @@
 "use client";
+
 import { useForm } from "react-hook-form";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import Image from "next/image";
-import { toast } from "react-hot-toast";
-import { AiOutlineEye, AiOutlineEyeInvisible } from "react-icons/ai";
-import { useCallback } from "react";
-import { loadFull } from "@tsparticles/engine";
+import { loadFull } from "tsparticles";
 import Particles from "react-tsparticles";
-
-// Configuración de partículas 
-const particlesConfig = {
-  fullScreen: { enable: true },
-  particles: {
-    number: {
-      value: 60,
-      density: {
-        enable: true,
-        value_area: 800,
-      },
-    },
-    color: { value: "#0ea5e9" },
-    shape: { type: "circle" },
-    opacity: {
-      value: 0.6,
-      random: false,
-    },
-    size: {
-      value: 2.5,
-      random: true,
-    },
-    move: {
-      enable: true,
-      speed: 1.5,
-      random: true,
-      straight: false,
-      out_mode: "out",
-    },
-  },
-  interactivity: {
-    events: {
-      onHover: { enable: true, mode: "repulse" },
-      onClick: { enable: true, mode: "push" },
-    },
-    modes: {
-      repulse: { distance: 60, duration: 0.4 },
-      push: { quantity: 4 },
-    },
-  },
-  retina_detect: true,
-};
 
 function LoginPage() {
   const {
@@ -58,10 +14,45 @@ function LoginPage() {
     handleSubmit,
     formState: { errors },
   } = useForm();
-  const router = useRouter();
 
+  const router = useRouter();
+  const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
+
+  const particlesInit = useCallback(async (engine) => {
+    // Carga completa del engine de partículas
+    await loadFull(engine);
+  }, []);
+
+  const particlesConfig = {
+    fullScreen: { enable: false }, // Deshabilitamos fullScreen para posicionar dentro del contenedor
+    background: {
+      color: { value: "#f3f4f6" }, // Color del fondo (gris claro)
+    },
+    particles: {
+      number: {
+        value: 50,
+        density: { enable: true, value_area: 800 },
+      },
+      color: { value: "#0ea5e9" },
+      shape: { type: "circle" },
+      opacity: { value: 0.5 },
+      size: { value: 2 },
+      move: {
+        enable: true,
+        speed: 1.5,
+        random: true,
+        out_mode: "out",
+      },
+    },
+    interactivity: {
+      events: {
+        onHover: { enable: true, mode: "repulse" },
+        onClick: { enable: true, mode: "push" },
+      },
+    },
+    retina_detect: true,
+  };
 
   const onSubmit = handleSubmit(async (data) => {
     setLoading(true);
@@ -70,71 +61,73 @@ function LoginPage() {
       password: data.password,
       redirect: false,
     });
-
     setLoading(false);
+
     if (res && res.error) {
-      // Mostramos el error con un toast
-      toast.error(res.error, {
-        style: { background: "#dc2626", color: "#fff" },
-      });
+      setError(res.error);
     } else {
-      // Éxito, mostramos mensaje fugaz y luego redirigimos
-      toast.success("¡Bienvenido!", {
-        style: { background: "#16a34a", color: "#fff" },
-      });
-      setTimeout(() => {
-        router.push("/");
-        router.refresh();
-      }, 1500);
+      router.push("/");
+      router.refresh();
     }
   });
 
-  // Carga de configuración de partículass
-  const particlesInit = useCallback(async (engine) => {
-    await loadFull(engine);
-  }, []);
-  
   return (
-    <div className="relative min-h-screen flex items-center justify-center bg-gray-100 p-4">
+    <div className="min-h-screen relative flex flex-col items-center justify-center p-4 lg:flex-row lg:m-0 lg:gap-36 lg:justify-center bg-gray-100">
       {/* Partículas de fondo */}
-      <Particles className="absolute inset-0 -z-10" init={particlesInit} options={particlesConfig} />
+      <div className="absolute inset-0 -z-10">
+        <Particles init={particlesInit} options={particlesConfig} />
+      </div>
 
-      <div className="bg-white shadow-lg rounded-lg max-w-md w-full mx-auto p-8 relative z-10">
-        <div className="flex flex-col items-center mb-8">
+      {/* Imagen lateral visible sólo en pantallas grandes */}
+      <div className="hidden lg:block">
+        <Image
+          src="/ajolotes.png"
+          width={550}
+          height={550}
+          alt="Imagen ajolotes"
+        />
+      </div>
+
+      <div className="bg-white shadow-md rounded-lg max-w-md w-full mx-auto p-8 lg:m-0">
+        <div className="flex justify-center mb-8">
           <Image
             src="/logoAjolotarios.jpeg"
-            width={120}
-            height={120}
-            alt="Project logo"
-            className="rounded-lg mb-4"
+            width={200}
+            height={200}
+            alt="Logo Proyecto"
+            className="rounded-lg"
           />
-          <h1 className="text-2xl font-bold text-gray-800">Iniciar Sesión</h1>
         </div>
 
-        <form onSubmit={onSubmit} className="space-y-6">
-          <div>
+        <form onSubmit={onSubmit}>
+          {error && (
+            <p className="bg-red-500 text-lg text-white p-3 rounded mb-2">
+              {error}
+            </p>
+          )}
+
+          <div className="mb-4">
             <label
+              className="block text-gray-700 text-sm font-bold mb-2"
               htmlFor="email"
-              className="block text-gray-700 text-sm font-semibold mb-1"
             >
               Correo electrónico
             </label>
             <input
+              className={`shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline ${
+                errors.email ? "border-red-500" : ""
+              }`}
               id="email"
               type="email"
-              aria-label="correo electrónico"
               placeholder="tucorreo@ejemplo.com"
-              className={`shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline ${
-                errors.email ? "border-red-500" : "border-gray-300"
-              }`}
               {...register("email", {
                 required: {
                   value: true,
-                  message: "El correo electrónico es obligatorio.",
+                  message: "El correo es requerido.",
                 },
                 pattern: {
                   value: /\S+@\S+\.\S+/,
-                  message: "Ingresa un correo válido.",
+                  message: "Introduce un correo válido.",
                 },
               })}
             />
@@ -145,40 +138,27 @@ function LoginPage() {
             )}
           </div>
 
-          <div className="relative">
+          <div className="mb-4">
             <label
+              className="block text-gray-700 text-sm font-bold mb-2"
               htmlFor="password"
-              className="block text-gray-700 text-sm font-semibold mb-1"
             >
               Contraseña
             </label>
             <input
-              id="password"
-              type={showPassword ? "text" : "password"}
-              aria-label="contraseña"
-              placeholder="Tu contraseña"
               className={`shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline ${
-                errors.password ? "border-red-500" : "border-gray-300"
+                errors.password ? "border-red-500" : ""
               }`}
+              id="password"
+              type="password"
+              placeholder="Tu contraseña"
               {...register("password", {
                 required: {
                   value: true,
-                  message: "La contraseña es obligatoria.",
-                },
-                minLength: {
-                  value: 6,
-                  message: "La contraseña debe tener al menos 6 caracteres.",
+                  message: "La contraseña es requerida.",
                 },
               })}
             />
-            <button
-              type="button"
-              className="absolute right-2 top-8 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none"
-              onClick={() => setShowPassword(!showPassword)}
-              aria-label="mostrar u ocultar contraseña"
-            >
-              {showPassword ? <AiOutlineEyeInvisible /> : <AiOutlineEye />}
-            </button>
             {errors.password && (
               <span className="text-red-500 text-sm">
                 {errors.password.message}
@@ -186,31 +166,13 @@ function LoginPage() {
             )}
           </div>
 
-          <div className="flex items-center justify-between text-sm text-gray-600">
-            <a
-              href="#"
-              className="hover:underline"
-              aria-label="Olvidaste tu contraseña"
-            >
-              ¿Olvidaste tu contraseña?
-            </a>
-            <a
-              href="#"
-              className="hover:underline"
-              aria-label="Crear cuenta nueva"
-            >
-              Crear cuenta
-            </a>
-          </div>
-
-          <div className="flex items-center justify-center mt-4">
+          <div className="flex items-center justify-center">
             <button
-              className={`bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline transition-colors ${
-                loading && "opacity-50 cursor-not-allowed"
+              className={`bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline ${
+                loading ? "opacity-70 cursor-not-allowed" : ""
               }`}
               type="submit"
               disabled={loading}
-              aria-label="Iniciar sesión"
             >
               {loading ? "Cargando..." : "Iniciar sesión"}
             </button>
