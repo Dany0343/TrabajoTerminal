@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, 
-  Legend, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell
+  Legend, ResponsiveContainer, BarChart, Bar
 } from 'recharts';
 import Select from 'react-select';
 import DatePicker from 'react-datepicker';
@@ -18,11 +18,6 @@ interface DashboardChartsProps {
   sensors: Sensor[];
 }
 
-interface Option {
-  value: string | number;
-  label: string;
-}
-
 const DashboardCharts: React.FC<DashboardChartsProps> = ({ 
   measurements = [], 
   alerts = [], 
@@ -30,88 +25,90 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({
 }) => {
   const [selectedSensorIds, setSelectedSensorIds] = useState<number[]>([]);
   const [selectedParameters, setSelectedParameters] = useState<string[]>([]);
-  const [dateRange, setDateRange] = useState<[Date | undefined, Date | undefined]>([undefined, undefined]);
-  
-  // Memoized sensor options
+  const [dateRange, setDateRange] = useState<[Date | null, Date | null]>([null, null]);
+
+  // Opciones de sensores mejoradas
   const sensorOptions = useMemo(() => 
     sensors.map(sensor => ({
       value: sensor.id,
       label: `${sensor.model} (${sensor.serialNumber})`
-    })), [sensors]
-  );
+    })).sort((a, b) => a.label.localeCompare(b.label))
+  , [sensors]);
 
-  // Memoized parameter options
+  // Opciones de parámetros mejoradas
   const parameterOptions = useMemo(() => {
     const uniqueParams = new Set<string>();
     measurements.forEach(m => {
       m.parameters.forEach(p => uniqueParams.add(p.parameter.name));
     });
-    return Array.from(uniqueParams).map(param => ({
-      value: param,
-      label: param
-    }));
+    return Array.from(uniqueParams)
+      .sort()
+      .map(param => ({
+        value: param,
+        label: param
+      }));
   }, [measurements]);
 
-  // Process measurement data for charts
+  // Procesamiento de datos mejorado
   const processedData = useMemo(() => {
+    if (!measurements.length) return [];
+
     let filtered = measurements;
 
-    // Apply filters
+    // Filtro por sensores
     if (selectedSensorIds.length) {
       filtered = filtered.filter(m => selectedSensorIds.includes(m.sensorId));
     }
-    if (selectedParameters.length) {
-      filtered = filtered.filter(m => 
-        m.parameters.some(p => selectedParameters.includes(p.parameter.name))
-      );
-    }
+
+    // Filtro por fechas mejorado
     if (dateRange[0] && dateRange[1]) {
+      const startDate = dateRange[0].setHours(0, 0, 0, 0);
+      const endDate = dateRange[1].setHours(23, 59, 59, 999);
+      
       filtered = filtered.filter(m => {
-        const date = new Date(m.dateTime);
-        return date >= dateRange[0]! && date <= dateRange[1]!;
+        const measurementDate = new Date(m.dateTime).getTime();
+        return measurementDate >= startDate && measurementDate <= endDate;
       });
     }
 
-    // Format data for charts
-    return filtered.reduce((acc, curr) => {
-      const date = new Date(curr.dateTime).toLocaleString();
-      if (!acc[date]) {
-        acc[date] = { date };
-      }
-      curr.parameters.forEach(p => {
+    // Formateo de datos para el gráfico
+    const formattedData = filtered.map(m => {
+      const baseData: { date: string; [key: string]: string | number } = {
+        date: new Date(m.dateTime).toLocaleString('es-MX', {
+          day: '2-digit',
+          month: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit'
+        })
+      };
+
+      // Agregar solo los parámetros seleccionados
+      m.parameters.forEach(p => {
         if (!selectedParameters.length || selectedParameters.includes(p.parameter.name)) {
-          acc[date][p.parameter.name] = p.value;
+          baseData[p.parameter.name] = Number(p.value);
         }
       });
-      return acc;
-    }, {} as Record<string, any>);
+
+      return baseData;
+    });
+
+    // Ordenar por fecha
+    return formattedData.sort((a, b) => 
+      new Date(a.date).getTime() - new Date(b.date).getTime()
+    );
   }, [measurements, selectedSensorIds, selectedParameters, dateRange]);
 
-  // Convert to array and sort by date
-  const chartData = useMemo(() => 
-    Object.values(processedData).sort((a, b) => 
-      new Date(a.date).getTime() - new Date(b.date).getTime()
-    ), [processedData]
-  );
-
-  // Alert statistics
+  // Estadísticas de alertas mejoradas
   const alertStats = useMemo(() => {
     const stats = alerts.reduce((acc, curr) => {
       acc[curr.alertType] = (acc[curr.alertType] || 0) + 1;
       return acc;
     }, {} as Record<string, number>);
     
-    return Object.entries(stats).map(([name, value]) => ({ name, value }));
+    return Object.entries(stats)
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value);
   }, [alerts]);
-
-  // Sensor status statistics
-  const sensorStats = useMemo(() => {
-    const statuses = ['ACTIVE', 'INACTIVE', 'MAINTENANCE', 'QUARANTINE'];
-    return statuses.map(status => ({
-      name: status,
-      value: sensors.filter(s => s.status === status).length
-    }));
-  }, [sensors]);
 
   return (
     <div className="space-y-8">
@@ -120,7 +117,7 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({
           <Select
             isMulti
             options={sensorOptions}
-            onChange={(selected) => setSelectedSensorIds(selected?.map(s => s.value as number) || [])}
+            onChange={(selected) => setSelectedSensorIds(selected?.map(s => Number(s.value)) || [])}
             placeholder="Seleccionar sensores..."
             className="w-full"
           />
@@ -129,7 +126,7 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({
           <Select
             isMulti
             options={parameterOptions}
-            onChange={(selected) => setSelectedParameters(selected?.map(s => s.value as string) || [])}
+            onChange={(selected) => setSelectedParameters(selected?.map(s => String(s.value)) || [])}
             placeholder="Seleccionar parámetros..."
             className="w-full"
           />
@@ -137,26 +134,32 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({
         <div className="flex-1">
           <DatePicker
             selectsRange
-            startDate={dateRange[0]}
-            endDate={dateRange[1]}
-            onChange={(update) => setDateRange([update[0] || undefined, update[1] || undefined])}
+            startDate={dateRange[0] ?? undefined}
+            endDate={dateRange[1] ?? undefined}
+            onChange={(update) => setDateRange(update)}
             className="w-full p-2 border rounded"
             placeholderText="Seleccionar fechas..."
+            dateFormat="dd/MM/yyyy"
           />
         </div>
       </div>
 
-      {/* Charts */}
+      {/* Gráficos */}
       <div className="grid gap-8 grid-cols-1 lg:grid-cols-2">
-        {/* Line Chart */}
+        {/* Gráfico de línea */}
         <div className="bg-white p-4 rounded-lg shadow">
           <h3 className="text-lg font-semibold mb-4">Mediciones en el Tiempo</h3>
           <div className="h-[300px]">
-            {chartData.length > 0 ? (
+            {processedData.length > 0 ? (
               <ResponsiveContainer>
-                <LineChart data={chartData}>
+                <LineChart data={processedData}>
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="date" />
+                  <XAxis 
+                    dataKey="date"
+                    angle={-45}
+                    textAnchor="end"
+                    height={70}
+                  />
                   <YAxis />
                   <Tooltip />
                   <Legend />
@@ -173,13 +176,13 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({
               </ResponsiveContainer>
             ) : (
               <div className="h-full flex items-center justify-center text-gray-500">
-                Selecciona parámetros para visualizar datos
+                No hay datos para mostrar con los filtros seleccionados
               </div>
             )}
           </div>
         </div>
 
-        {/* Alert Chart */}
+        {/* Gráfico de barras */}
         <div className="bg-white p-4 rounded-lg shadow">
           <h3 className="text-lg font-semibold mb-4">Distribución de Alertas</h3>
           <div className="h-[300px]">
@@ -195,43 +198,11 @@ const DashboardCharts: React.FC<DashboardChartsProps> = ({
               </ResponsiveContainer>
             ) : (
               <div className="h-full flex items-center justify-center text-gray-500">
-                No hay datos de alertas disponibles
+                No hay alertas registradas
               </div>
             )}
           </div>
         </div>
-
-        {/* Sensor Status Chart */}
-        {/* <div className="bg-white p-4 rounded-lg shadow lg:col-span-2">
-          <h3 className="text-lg font-semibold mb-4">Estado de Sensores</h3>
-          <div className="h-[300px]">
-            {sensorStats.some(stat => stat.value > 0) ? (
-              <ResponsiveContainer>
-                <PieChart>
-                  <Pie
-                    data={sensorStats}
-                    dataKey="value"
-                    nameKey="name"
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={100}
-                    label
-                  >
-                    {sensorStats.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                  <Legend />
-                </PieChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="h-full flex items-center justify-center text-gray-500">
-                No hay datos de estado de sensores
-              </div>
-            )}
-          </div>
-        </div> */}
       </div>
     </div>
   );

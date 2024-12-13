@@ -211,7 +211,6 @@ export default function Dashboard() {
         {/* Histórico de Mediciones */}
         <div id="report-content">
           <LogHistory />
-
           {/* Gráficas */}
           <div className="my-8">
             <DashboardCharts
