@@ -17,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useToast } from "@/components/ui/use-toast"; // Fixed import
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface User {
   id: number;
@@ -28,30 +28,28 @@ interface User {
 }
 
 export default function UsersPage() {
-    const [users, setUsers] = useState<User[]>([]);
-    const [loading, setLoading] = useState(true);
-    const { toast } = useToast(); // Using useToast hook
-  
-    useEffect(() => {
-      fetchUsers();
-    }, []);
-  
-    const fetchUsers = async () => {
-      try {
-        const response = await fetch("/api/users");
-        if (!response.ok) throw new Error("Error fetching users");
-        const data = await response.json();
-        setUsers(data);
-      } catch (error) {
-        toast({
-          title: "Error",
-          description: "No se pudieron cargar los usuarios",
-          variant: "destructive",
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
+  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  const fetchUsers = async () => {
+    try {
+      const response = await fetch("/api/users");
+      if (!response.ok) throw new Error("Error fetching users");
+      const data = await response.json();
+      setUsers(data);
+      setError(null);
+    } catch (error) {
+      setError("No se pudieron cargar los usuarios");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const updateUserRole = async (userId: number, newRole: string) => {
     try {
@@ -69,17 +67,12 @@ export default function UsersPage() {
       setUsers(users.map(user => 
         user.id === userId ? updatedUser : user
       ));
-
-      toast({
-        title: "Success",
-        description: "Rol actualizado correctamente",
-      });
+      
+      setSuccessMessage("Rol actualizado correctamente");
+      setTimeout(() => setSuccessMessage(null), 3000);
+      setError(null);
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "No se pudo actualizar el rol",
-        variant: "destructive",
-      });
+      setError("No se pudo actualizar el rol");
     }
   };
 
@@ -90,6 +83,19 @@ export default function UsersPage() {
   return (
     <div className="container mx-auto py-10">
       <h1 className="text-2xl font-bold mb-6">Gestión de Usuarios</h1>
+      
+      {error && (
+        <Alert variant="destructive" className="mb-4">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+      
+      {successMessage && (
+        <Alert className="mb-4">
+          <AlertDescription>{successMessage}</AlertDescription>
+        </Alert>
+      )}
+
       <div className="rounded-md border">
         <Table>
           <TableHeader>
