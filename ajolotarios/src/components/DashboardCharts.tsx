@@ -108,7 +108,8 @@ const DashboardCharts: React.FC<{
     // Limitamos el número de puntos
     const totalPoints = filtered.length;
     const maxPoints = 10;
-    const interval = Math.ceil(totalPoints / maxPoints);
+    // const interval = Math.ceil(totalPoints / maxPoints);
+    const interval = 1;
   
     return filtered.map((m, index) => {
       const date = new Date(m.dateTime);
@@ -191,10 +192,13 @@ const DashboardCharts: React.FC<{
                     scale="time"
                     tickFormatter={(unixTime) => {
                       const date = new Date(unixTime);
-                      return formatDate(
-                        date,
-                        getDateFormat(dateRange[0], dateRange[1])
-                      );
+                      return date.toLocaleString("es-MX", {
+                        day: "2-digit",
+                        month: "2-digit",
+                        year: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      });
                     }}
                   />
                   <YAxis />
