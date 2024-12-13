@@ -17,6 +17,7 @@ import Select from "react-select";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { Measurement, Alert } from "@/types/types";
+import { useEffect } from "react";
 
 const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#AA336A"];
 
@@ -124,6 +125,11 @@ const DashboardCharts: React.FC<{
       .sort((a, b) => b.value - a.value);
   }, [alerts]);
 
+  useEffect(() => {
+    console.log("Selected Date Range:", dateRange);
+    console.log("Processed Data Length:", processedData.length);
+  }, [dateRange, processedData]);
+
   return (
     <div className="space-y-8">
       <div className="flex flex-col md:flex-row gap-4">
@@ -139,15 +145,17 @@ const DashboardCharts: React.FC<{
           />
         </div>
         <div className="flex-1">
-          <DatePicker
-            selectsRange
-            startDate={dateRange[0] ?? undefined}
-            endDate={dateRange[1] ?? undefined}
-            onChange={(update) => setDateRange(update)}
-            className="w-full p-2 border rounded"
-            placeholderText="Seleccionar fechas..."
-            dateFormat="dd/MM/yyyy"
-          />
+        <DatePicker
+  selectsRange
+  startDate={dateRange[0] ?? undefined}
+  endDate={dateRange[1] ?? undefined}
+  onChange={(update: [Date | null, Date | null] | null) => 
+    setDateRange(update ?? [null, null])
+  }
+  className="w-full p-2 border rounded"
+  placeholderText="Seleccionar fechas..."
+  dateFormat="dd/MM/yyyy"
+/>
         </div>
       </div>
 
