@@ -1,95 +1,137 @@
 // src/app/dashboard/page.tsx
 
-'use client'
+"use client";
 
-import { useEffect, useState } from 'react'
-import { Bell, FileText, Thermometer, Droplet } from 'lucide-react'
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import dynamic from 'next/dynamic'
-import LoadingSpinner from '@/components/LoadingSpinner' 
-import AjolotarySelector from '@/components/AjolotarySelector'
-import MeasurementHistory from '@/components/MeasurementHistory'
-import LogHistory from '@/components/LogHistory'
-import jsPDF from 'jspdf'
-import html2canvas from 'html2canvas'
+import { useEffect, useState } from "react";
+import { Bell, FileText, Thermometer, Droplet } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import dynamic from "next/dynamic";
+import LoadingSpinner from "@/components/LoadingSpinner";
+import AjolotarySelector from "@/components/AjolotarySelector";
+import MeasurementHistory from "@/components/MeasurementHistory";
+import LogHistory from "@/components/LogHistory";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
 
-import { Ajolotary, Tank, Axolotl, Alert, Measurement, Sensor } from '@/types/types'
+import {
+  Ajolotary,
+  Tank,
+  Axolotl,
+  Alert,
+  Measurement,
+  Sensor,
+} from "@/types/types";
 
-import DashboardCharts from '@/components/DashboardCharts' 
+import DashboardCharts from "@/components/DashboardCharts";
 
-const Map = dynamic(() => import('@/components/Map'), { ssr: false, loading: () => <LoadingSpinner /> })
+const Map = dynamic(() => import("@/components/Map"), {
+  ssr: false,
+  loading: () => <LoadingSpinner />,
+});
 
 export default function Dashboard() {
-  const [ajolotaries, setAjolotaries] = useState<Ajolotary[]>([])
-  const [tanks, setTanks] = useState<Tank[]>([])
-  const [axolotls, setAxolotls] = useState<Axolotl[]>([])
-  const [alerts, setAlerts] = useState<Alert[]>([])
-  const [measurements, setMeasurements] = useState<Measurement[]>([]) 
-  const [sensors, setSensors] = useState<Sensor[]>([]) 
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const [ajolotaries, setAjolotaries] = useState<Ajolotary[]>([]);
+  const [tanks, setTanks] = useState<Tank[]>([]);
+  const [axolotls, setAxolotls] = useState<Axolotl[]>([]);
+  const [alerts, setAlerts] = useState<Alert[]>([]);
+  const [measurements, setMeasurements] = useState<Measurement[]>([]);
+  const [sensors, setSensors] = useState<Sensor[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   // Nuevo estado para la selección
-  const [selectedAjolotary, setSelectedAjolotary] = useState<Ajolotary | null>(null)
+  const [selectedAjolotary, setSelectedAjolotary] = useState<Ajolotary | null>(
+    null
+  );
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [ajolotariesRes, tanksRes, axolotlsRes, alertsRes, measurementsRes] = await Promise.all([
-          fetch('/api/ajolotaries'),
-          fetch('/api/tanks'),
-          fetch('/api/axolotls'),
-          fetch('/api/alerts'),
-          fetch('/api/measurements'),
-          fetch('/api/sensors')
-        ])
+        const [
+          ajolotariesRes,
+          tanksRes,
+          axolotlsRes,
+          alertsRes,
+          measurementsRes,
+        ] = await Promise.all([
+          fetch("/api/ajolotaries"),
+          fetch("/api/tanks"),
+          fetch("/api/axolotls"),
+          fetch("/api/alerts"),
+          fetch("/api/measurements"),
+          fetch("/api/sensors"),
+        ]);
 
-        if (!ajolotariesRes.ok || !tanksRes.ok || !axolotlsRes.ok || !alertsRes.ok || !measurementsRes.ok) {
-          throw new Error('Error al obtener los datos')
+        if (
+          !ajolotariesRes.ok ||
+          !tanksRes.ok ||
+          !axolotlsRes.ok ||
+          !alertsRes.ok ||
+          !measurementsRes.ok
+        ) {
+          throw new Error("Error al obtener los datos");
         }
 
-        const [ajolotariesData, tanksData, axolotlsData, alertsData, measurementsData] = await Promise.all([
+        const [
+          ajolotariesData,
+          tanksData,
+          axolotlsData,
+          alertsData,
+          measurementsData,
+        ] = await Promise.all([
           ajolotariesRes.json(),
           tanksRes.json(),
           axolotlsRes.json(),
           alertsRes.json(),
           measurementsRes.json(),
-        ])
+        ]);
 
-        setAjolotaries(Array.isArray(ajolotariesData) ? ajolotariesData : [])
-        setTanks(Array.isArray(tanksData) ? tanksData : [])
-        setAxolotls(Array.isArray(axolotlsData) ? axolotlsData : [])
+        setAjolotaries(Array.isArray(ajolotariesData) ? ajolotariesData : []);
+        setTanks(Array.isArray(tanksData) ? tanksData : []);
+        setAxolotls(Array.isArray(axolotlsData) ? axolotlsData : []);
 
         // **Corrección aquí**: Extraer el arreglo de la propiedad `data`
-        setAlerts(alertsData.data && Array.isArray(alertsData.data) ? alertsData.data : [])
-        setMeasurements(measurementsData.data && Array.isArray(measurementsData.data) ? measurementsData.data : [])
+        setAlerts(
+          alertsData.data && Array.isArray(alertsData.data)
+            ? alertsData.data
+            : []
+        );
+        setMeasurements(
+          measurementsData.data && Array.isArray(measurementsData.data)
+            ? measurementsData.data
+            : []
+        );
       } catch (err: any) {
-        console.error('Error fetching data:', err)
-        setError(err.message || 'Error desconocido')
+        console.error("Error fetching data:", err);
+        setError(err.message || "Error desconocido");
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
+    };
 
-    fetchData()
-  }, [])
+    fetchData();
+  }, []);
 
-  const activeTanks = tanks.filter(tank => tank.status === 'ACTIVE')
-  const criticalAlerts = alerts.filter(alert => alert.priority === 'HIGH' && alert.status === 'PENDING')
+  const activeTanks = tanks.filter((tank) => tank.status === "ACTIVE");
+  const criticalAlerts = alerts.filter(
+    (alert) => alert.priority === "HIGH" && alert.status === "PENDING"
+  );
 
   // Filtrar mediciones según la instalación seleccionada
   const filteredMeasurements = selectedAjolotary
-    ? measurements.filter(m => m.device.tank.ajolotaryId === selectedAjolotary.id)
-    : measurements
+    ? measurements.filter(
+        (m) => m.device.tank.ajolotaryId === selectedAjolotary.id
+      )
+    : measurements;
 
   if (loading) {
-    return <LoadingSpinner />
+    return <LoadingSpinner />;
   }
 
   if (error) {
-    return <div className="text-red-500">Error: {error}</div>
+    return <div className="text-red-500">Error: {error}</div>;
   }
 
   return (
@@ -98,36 +140,46 @@ export default function Dashboard() {
         <h1 className="text-3xl font-bold mb-6">Panel de Control</h1>
 
         {/* Selector de Instalaciones */}
-        <AjolotarySelector 
-          ajolotaries={ajolotaries} 
-          onSelect={setSelectedAjolotary} 
+        <AjolotarySelector
+          ajolotaries={ajolotaries}
+          onSelect={setSelectedAjolotary}
         />
 
         {/* Summary Cards */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-6">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Instalaciones</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                Total Instalaciones
+              </CardTitle>
               <Bell className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{ajolotaries.length}</div>
-              <p className="text-xs text-muted-foreground">Ajolotarios registrados</p>
+              <p className="text-xs text-muted-foreground">
+                Ajolotarios registrados
+              </p>
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Tanques Activos</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                Tanques Activos
+              </CardTitle>
               <Thermometer className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{activeTanks.length}</div>
-              <p className="text-xs text-muted-foreground">De {tanks.length} tanques totales</p>
+              <p className="text-xs text-muted-foreground">
+                De {tanks.length} tanques totales
+              </p>
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Ajolotes Registrados</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                Ajolotes Registrados
+              </CardTitle>
               <Avatar className="h-4 w-4">
                 <AvatarImage src="/placeholder.svg" alt="Ajolote" />
                 <AvatarFallback>AX</AvatarFallback>
@@ -135,17 +187,23 @@ export default function Dashboard() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{axolotls.length}</div>
-              <p className="text-xs text-muted-foreground">Ajolotes en el sistema</p>
+              <p className="text-xs text-muted-foreground">
+                Ajolotes en el sistema
+              </p>
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Alertas Activas</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                Alertas Activas
+              </CardTitle>
               <Bell className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{criticalAlerts.length}</div>
-              <p className="text-xs text-muted-foreground">Alertas críticas pendientes</p>
+              <p className="text-xs text-muted-foreground">
+                Alertas críticas pendientes
+              </p>
             </CardContent>
           </Card>
         </div>
@@ -153,17 +211,17 @@ export default function Dashboard() {
         {/* Histórico de Mediciones */}
         <div id="report-content">
           <LogHistory />
+
+          {/* Gráficas */}
+          <div className="my-8">
+            <DashboardCharts
+              measurements={filteredMeasurements}
+              alerts={alerts}
+              sensors={sensors}
+            />
+          </div>
         </div>
 
-        {/* Gráficas */}
-        <div className="my-8">
-          <DashboardCharts 
-            measurements={filteredMeasurements} 
-            alerts={alerts} 
-            sensors={sensors} 
-          />
-        </div>
-        
         {/* Map */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7 mb-6">
           <Card className="col-span-7">
@@ -172,7 +230,11 @@ export default function Dashboard() {
             </CardHeader>
             <CardContent>
               <div className="h-[400px]">
-                <Map ajolotaries={selectedAjolotary ? [selectedAjolotary] : ajolotaries} />
+                <Map
+                  ajolotaries={
+                    selectedAjolotary ? [selectedAjolotary] : ajolotaries
+                  }
+                />
               </div>
             </CardContent>
           </Card>
@@ -187,19 +249,28 @@ export default function Dashboard() {
             <CardContent>
               {alerts.length > 0 ? (
                 <div className="space-y-4">
-                  {alerts.slice(0, 3).map(alert => (
+                  {alerts.slice(0, 3).map((alert) => (
                     <div key={alert.id} className="flex items-center">
-                      <div className={`w-2 h-2 rounded-full mr-2 ${
-                        alert.priority === 'HIGH' ? 'bg-red-500' :
-                        alert.priority === 'MEDIUM' ? 'bg-yellow-500' : 'bg-green-500'
-                      }`}></div>
+                      <div
+                        className={`w-2 h-2 rounded-full mr-2 ${
+                          alert.priority === "HIGH"
+                            ? "bg-red-500"
+                            : alert.priority === "MEDIUM"
+                            ? "bg-yellow-500"
+                            : "bg-green-500"
+                        }`}
+                      ></div>
                       <span className="flex-1">{alert.description}</span>
-                      <span className="text-xs text-muted-foreground">{alert.status}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {alert.status}
+                      </span>
                     </div>
                   ))}
                 </div>
               ) : (
-                <div className="text-center text-muted">No hay alertas recientes.</div>
+                <div className="text-center text-muted">
+                  No hay alertas recientes.
+                </div>
               )}
             </CardContent>
           </Card>
@@ -209,8 +280,8 @@ export default function Dashboard() {
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
-                <Button 
-                  className="w-full justify-start flex items-center" 
+                <Button
+                  className="w-full justify-start flex items-center"
                   onClick={() => generatePDF()}
                 >
                   <FileText className="mr-2 h-4 w-4" />
@@ -230,17 +301,24 @@ export default function Dashboard() {
             <CardContent>
               {tanks.length > 0 ? (
                 <div className="space-y-4">
-                  {tanks.slice(0, 3).map(tank => (
-                    <div key={tank.id} className="flex items-center justify-between">
+                  {tanks.slice(0, 3).map((tank) => (
+                    <div
+                      key={tank.id}
+                      className="flex items-center justify-between"
+                    >
                       <div>
                         <h3 className="font-medium">{tank.name}</h3>
-                        <p className="text-sm text-muted-foreground">Capacidad: {tank.capacity}L</p>
+                        <p className="text-sm text-muted-foreground">
+                          Capacidad: {tank.capacity}L
+                        </p>
                       </div>
                     </div>
                   ))}
                 </div>
               ) : (
-                <div className="text-center text-muted">No hay tanques destacados.</div>
+                <div className="text-center text-muted">
+                  No hay tanques destacados.
+                </div>
               )}
             </CardContent>
           </Card>
@@ -251,21 +329,28 @@ export default function Dashboard() {
             <CardContent>
               {axolotls.length > 0 ? (
                 <div className="space-y-4">
-                  {axolotls.slice(0, 3).map(axolotl => (
-                    <div key={axolotl.id} className="flex items-center space-x-4">
+                  {axolotls.slice(0, 3).map((axolotl) => (
+                    <div
+                      key={axolotl.id}
+                      className="flex items-center space-x-4"
+                    >
                       <Avatar>
                         <AvatarImage src="/placeholder.svg" alt="Ajolote" />
                         <AvatarFallback>AX</AvatarFallback>
                       </Avatar>
                       <div>
                         <h3 className="font-medium">{axolotl.name}</h3>
-                        <p className="text-sm text-muted-foreground">Edad: {axolotl.age} años | Salud: {axolotl.health}</p>
+                        <p className="text-sm text-muted-foreground">
+                          Edad: {axolotl.age} años | Salud: {axolotl.health}
+                        </p>
                       </div>
                     </div>
                   ))}
                 </div>
               ) : (
-                <div className="text-center text-muted">No hay ajolotes destacados.</div>
+                <div className="text-center text-muted">
+                  No hay ajolotes destacados.
+                </div>
               )}
             </CardContent>
           </Card>
@@ -283,31 +368,33 @@ export default function Dashboard() {
         </div>
       </footer>
     </div>
-  )
+  );
 
   // Función para generar PDF
   async function generatePDF() {
-    const input = document.getElementById('report-content') // Captura solo esta sección
+    const input = document.getElementById("report-content"); // Captura solo esta sección
 
     if (!input) {
-      alert('No se encontró el contenido para el informe.')
-      return
+      alert("No se encontró el contenido para el informe.");
+      return;
     }
 
-    const doc = new jsPDF('p', 'pt', 'a4')
+    const doc = new jsPDF("p", "pt", "a4");
 
     await html2canvas(input, { scale: 2, useCORS: true }).then((canvas) => {
-      const imgData = canvas.toDataURL('image/png')
-      const imgProps = doc.getImageProperties(imgData)
-      const pdfWidth = doc.internal.pageSize.getWidth()
-      const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width
-      doc.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight)
-    })
+      const imgData = canvas.toDataURL("image/png");
+      const imgProps = doc.getImageProperties(imgData);
+      const pdfWidth = doc.internal.pageSize.getWidth();
+      const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+      doc.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
+    });
 
     // fecha de hoy
-    const today = new Date()
-    let nombreArchivo = `informe-ajolotarios-${today.getFullYear()}-${today.getMonth() + 1}-${today.getDate()}.pdf`
+    const today = new Date();
+    let nombreArchivo = `informe-ajolotarios-${today.getFullYear()}-${
+      today.getMonth() + 1
+    }-${today.getDate()}.pdf`;
 
-    doc.save(nombreArchivo)
+    doc.save(nombreArchivo);
   }
 }
