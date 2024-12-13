@@ -178,17 +178,12 @@ const LogHistory: React.FC = () => {
           {/* Entidad */}
           <Select
             onValueChange={(value) => {
-              console.log("Selected entity:", value); // Debug log
               const entity = value === "all" ? "" : value;
-              setFilters((prev) => {
-                const newFilters = { ...prev, entity };
-                console.log("New filters:", newFilters); // Debug log
-                return newFilters;
-              });
+              setFilters((prev) => ({ ...prev, entity }));
             }}
-            value={filters.entity || "all"} // Add default value
+            value={filters.entity || "all"}
           >
-            <SelectTrigger>
+            <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="Entidad" />
             </SelectTrigger>
             <SelectContent>
@@ -197,6 +192,8 @@ const LogHistory: React.FC = () => {
               <SelectItem value="TANK">Tanque</SelectItem>
               <SelectItem value="SENSOR">Sensor</SelectItem>
               <SelectItem value="MEASUREMENT">Medición</SelectItem>
+              <SelectItem value="AXOLOTL">Ajolote</SelectItem>
+              <SelectItem value="USER">Usuario</SelectItem>
             </SelectContent>
           </Select>
           {/* Usuario */}
