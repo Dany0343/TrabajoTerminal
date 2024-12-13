@@ -89,7 +89,7 @@ function LoginPage() {
     }
   });
 
-  // Carga de configuración de partículas
+  // Carga de configuración de partículass
   const particlesInit = useCallback(async (engine) => {
     await loadFull(engine);
   }, []);
