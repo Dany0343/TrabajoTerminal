@@ -65,10 +65,10 @@ const AuthenticatedHeader = () => {
         {/* Botones y Avatar */}
         <div className="flex items-center space-x-2">
           {/* Botón de Notificaciones */}
-          <Button size="icon" variant="ghost" className="hidden md:inline-flex">
+          {/* <Button size="icon" variant="ghost" className="hidden md:inline-flex">
             <Bell className="h-4 w-4" />
             <span className="sr-only">Notificaciones</span>
-          </Button>
+          </Button> */}
 
           {/* Menú Hamburguesa para Pantallas Pequeñas */}
           <Button
